@@ -4,6 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>메모장</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#191919" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="메모장">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <style>
   :root {
     --bg: #ffffff;
@@ -332,7 +341,11 @@
   load();
   renderList();
   renderEditor();
-  // 모바일 첫 화면은 목록, 데스크톱은 선택된 메모 표시
+
+  // PWA: 오프라인 동작을 위한 서비스 워커 등록
+  if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
 })();
 </script>
 </body>
