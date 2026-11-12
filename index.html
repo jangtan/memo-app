@@ -93,13 +93,14 @@
   }
   .act.pin { left: 0; background: #ff9f0a; }
   .act.del { right: 0; background: var(--danger); }
+  .act.move { right: 80px; background: #5e5ce6; }
   .item {
     position: relative; display: block; width: 100%; text-align: left; padding: 0 0 0 16px;
     background: var(--card); transition: transform .22s ease; user-select: none; -webkit-user-select: none;
   }
   .row.drag .item { transition: none; }
   .row.open-l .item { transform: translateX(80px); }
-  .row.open-r .item { transform: translateX(-80px); }
+  .row.open-r .item { transform: translateX(-160px); }
   .item .in { padding: 10px 16px 10px 0; border-bottom: .5px solid var(--sep); min-width: 0; }
   .row:last-child .in { border-bottom: none; }
   .item.active, .item.active .in { background: var(--select); }
@@ -308,7 +309,8 @@
 <script>
 (() => {
   const KEY = 'memo-app-v1';
-  const SWIPE = 80;
+  const SWIPE = 80;          // 버튼 하나의 폭
+  const SWIPE_R = SWIPE * 2; // 왼쪽으로 밀면 버튼 두 개(폴더, 삭제)
   const $ = id => document.getElementById(id);
   const el = {
     app: $('app'), list: $('list'), search: $('search'), count: $('count'), chips: $('chips'),
@@ -425,7 +427,7 @@
       ['ul', '-  글머리 기호 / 1.  번호 목록'],
       ['ul', '[]  할 일 / >  인용 / ```  코드 / ---  구분선'],
       ['quote', '글자를 선택하고 Ctrl+B / Ctrl+I 로 굵게, 기울임 서식을 쓸 수 있어요.'],
-      ['p', '목록에서 메모를 오른쪽으로 밀면 고정, 왼쪽으로 밀면 삭제됩니다.'],
+      ['p', '목록에서 메모를 오른쪽으로 밀면 고정, 왼쪽으로 밀면 폴더 이동과 삭제가 나옵니다.'],
     ];
     notes = [{
       id: uid(), title: '환영합니다', icon: '👋', created: now, updated: now,
@@ -505,6 +507,7 @@
     const title = n.title ? highlight(n.title, q) : '새로운 메모';
     return `<div class="row" data-id="${n.id}">
       <button class="act pin" data-act="pin">${ICON.pin}<span>${n.pinned ? '고정 해제' : '고정'}</span></button>
+      <button class="act move" data-act="move"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 7.5a2 2 0 0 1 2-2h3.6l2 2h7.4a2 2 0 0 1 2 2V16a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/></svg><span>폴더</span></button>
       <button class="act del" data-act="del">${ICON.trash}<span>삭제</span></button>
       <button class="item${n.id === currentId ? ' active' : ''}" data-id="${n.id}"><div class="in">
         <div class="t">${n.icon ? esc(n.icon) + ' ' : ''}${title}</div>
@@ -1049,14 +1052,15 @@
     return f;
   }
 
-  function moveSheet() {
-    const n = current();
+  // id를 주면 그 메모를, 안 주면 지금 열려 있는 메모를 옮긴다
+  function moveSheet(id) {
+    const n = id ? notes.find(x => x.id === id) : current();
     if (!n) return;
-    sheet('폴더로 이동', [
+    sheet(`"${n.title || '새로운 메모'}" 폴더로 이동`, [
       { label: '폴더 없음', checked: !n.folder, run: () => moveTo(n, null) },
       ...folders.map(f => ({ label: f.name, checked: n.folder === f.id, run: () => moveTo(n, f.id) })),
       { label: '＋ 새 폴더…', run: () => { const f = addFolder(); if (f) moveTo(n, f.id); } },
-    ]);
+    ], () => renderList());
   }
 
   function moveTo(n, folderId) {
@@ -1122,7 +1126,7 @@
     const row = e.target.closest('.row');
     if (!row || e.target.closest('.act')) return;
     if (openRow && openRow !== row) setRow(openRow, null);
-    const base = row.classList.contains('open-l') ? SWIPE : row.classList.contains('open-r') ? -SWIPE : 0;
+    const base = row.classList.contains('open-l') ? SWIPE : row.classList.contains('open-r') ? -SWIPE_R : 0;
     swipe = { row, x: e.clientX, y: e.clientY, base, active: false, dx: 0 };
   });
 
@@ -1138,7 +1142,7 @@
       else return;
     }
     swipe.dx = dx;
-    const x = Math.max(-SWIPE * 1.3, Math.min(SWIPE * 1.3, swipe.base + dx));
+    const x = Math.max(-SWIPE_R - 24, Math.min(SWIPE + 24, swipe.base + dx));
     swipe.row.querySelector('.item').style.transform = `translateX(${x}px)`;
   });
 
@@ -1161,7 +1165,9 @@
     const act = e.target.closest('.act');
     if (act) {
       const id = act.closest('.row').dataset.id;
-      if (act.dataset.act === 'pin') togglePin(id); else askDelete(id);
+      if (act.dataset.act === 'pin') togglePin(id);
+      else if (act.dataset.act === 'move') moveSheet(id);
+      else askDelete(id);
       return;
     }
     const item = e.target.closest('.item');
@@ -1192,7 +1198,7 @@
   $('newBtn2').addEventListener('click', createNote);
   $('delBtn').addEventListener('click', () => current() && askDelete(currentId));
   el.pin.addEventListener('click', () => togglePin(currentId));
-  $('folderBtn').addEventListener('click', moveSheet);
+  $('folderBtn').addEventListener('click', () => moveSheet());
   $('typeBtn').addEventListener('mousedown', e => e.preventDefault());
   $('typeBtn').addEventListener('click', typeSheet);
   el.iconBtn.addEventListener('click', emojiSheet);
