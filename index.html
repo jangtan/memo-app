@@ -261,6 +261,34 @@
   @keyframes fade { from { opacity: 0; } }
   @keyframes rise { from { transform: translateY(30px); opacity: 0; } }
 
+  /* 길게 누르면 나오는 메뉴 */
+  .lp-menu {
+    position: fixed; z-index: 45; background: var(--text); color: var(--bg); border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .25); animation: fade .12s ease; overflow: hidden;
+  }
+  .lp-menu button { display: flex; align-items: center; gap: 7px; padding: 11px 16px; font-size: 15px; font-weight: 600; white-space: nowrap; }
+  .lp-menu button:active { opacity: .6; }
+
+  /* 링크 입력창 */
+  .sheet-bg.top { align-items: flex-start; padding: max(12vh, 24px) 16px 16px; }
+  .dialog {
+    width: 100%; max-width: 380px; background: var(--card); border-radius: 22px; padding: 22px 20px 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, .25); animation: rise .24s cubic-bezier(.2, .8, .2, 1);
+  }
+  .dlg-title { font-size: 18px; font-weight: 700; letter-spacing: -.3px; margin-bottom: 16px; }
+  .dialog label { display: block; font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 12px; }
+  .dialog input {
+    display: block; width: 100%; height: 46px; margin-top: 6px; padding: 0 14px; border: none; outline: none;
+    border-radius: 12px; background: var(--field); color: var(--text); font: inherit; font-size: 16px; font-weight: 400;
+  }
+  .dialog input:focus { box-shadow: 0 0 0 2px rgba(242, 176, 30, .5); }
+  .dlg-err { color: var(--danger); font-size: 13px; margin: -4px 0 10px; }
+  .dlg-btns { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+  .dlg-btns .spacer { flex: 1; }
+  .dlg-btns button { height: 42px; padding: 0 18px; border-radius: 999px; font-size: 15px; font-weight: 600; background: var(--field); }
+  .dlg-btns button.primary { background: var(--text); color: var(--bg); }
+  .dlg-btns button.danger { background: transparent; color: var(--danger); padding: 0 6px; }
+
   /* 마우스가 있는 기기에서만 hover 표시 */
   @media (hover: hover) {
     .item:hover:not(.active) { background: var(--hover); }
@@ -314,6 +342,9 @@
       </button>
       <span class="spacer"></span>
       <button class="tool aa" id="typeBtn" aria-label="블록 서식">Aa</button>
+      <button class="tool" id="linkBtn" aria-label="링크 추가">
+        <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1.2 1.2"/><path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1.2-1.2"/></svg>
+      </button>
       <button class="tool" id="pinBtn" aria-label="고정">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h6l-.8 6 3 3.2H6.8L9.8 10z"/><path d="M12 13.2V20"/></svg>
       </button>
@@ -340,6 +371,7 @@
   </section>
 </div>
 <div class="slash" id="slash" hidden></div>
+<div class="lp-menu" id="lpMenu" hidden><button type="button" id="lpBtn"></button></div>
 
 <script>
 (() => {
@@ -411,6 +443,15 @@
       if (node.nodeType !== 1) return;
       const tag = node.tagName;
       if (tag === 'BR') dst.appendChild(document.createElement('br'));
+      else if (tag === 'A' && node.dataset.n && safeHref(node.getAttribute('href'))) {
+        // 직접 추가한(이름 붙인) 링크. 주소만 적어 자동으로 생긴 링크는 저장하지 않는다.
+        const e = document.createElement('a');
+        e.setAttribute('href', safeHref(node.getAttribute('href')));
+        e.dataset.n = '1';
+        e.title = '눌러서 링크 열기';
+        node.childNodes.forEach(c => add(c, e));
+        if (e.textContent) dst.appendChild(e);
+      }
       else if (INLINE.has(tag)) { const e = document.createElement(tag.toLowerCase()); node.childNodes.forEach(c => add(c, e)); dst.appendChild(e); }
       else node.childNodes.forEach(c => add(c, dst));
     };
@@ -726,10 +767,27 @@
     try { const p = new URL(full); return /^https?:$/.test(p.protocol) ? p.href : null; } catch (e) { return null; }
   }
 
+  const safeHref = h => { try { const p = new URL(h); return /^https?:$/.test(p.protocol) ? p.href : null; } catch (e) { return null; } };
+  // 입력창에 적은 주소 정리 (https:// 생략 가능)
+  const normUrl = v => { v = (v || '').trim(); return v ? safeHref(/^[a-z][a-z0-9+.-]*:\/\//i.test(v) ? v : 'https://' + v) : null; };
+
+  // 자동 링크 대상이 되는 글자 구간들 (이름 붙인 링크와 서식 경계에서 끊음)
+  function textRuns(blk) {
+    const runs = [''];
+    const walk = n => n.childNodes.forEach(c => {
+      if (c.nodeType === 3) runs[runs.length - 1] += c.nodeValue;
+      else if (c.nodeType !== 1) return;
+      else if (c.tagName === 'A' && !c.dataset.n) walk(c);
+      else { runs.push(''); if (c.tagName !== 'A') walk(c); runs.push(''); }
+    });
+    walk(blk);
+    return runs;
+  }
+
   function linkify(blk) {
     const t = blk.dataset.b;
-    const want = t === 'hr' || t === 'code' ? [] : urlsIn(blk.textContent);
-    const links = [...blk.querySelectorAll('a')];
+    const want = t === 'hr' || t === 'code' ? [] : textRuns(blk).flatMap(urlsIn);
+    const links = [...blk.querySelectorAll('a:not([data-n])')];
     if (want.join('\n') === links.map(a => a.textContent).join('\n')) return false;
     links.forEach(a => a.replaceWith(...a.childNodes));
     blk.normalize();
@@ -738,6 +796,7 @@
     const texts = [];
     while (walker.nextNode()) texts.push(walker.currentNode);
     for (const node of texts) {
+      if (node.parentElement.closest('a[data-n]')) continue;
       const s = node.nodeValue;
       const frag = document.createDocumentFragment();
       let last = 0;
@@ -814,7 +873,8 @@
     if (!a) return;
     e.preventDefault();
     e.stopPropagation();
-    const href = toHref(a.textContent);
+    if (Date.now() - lpFiredAt < 900) return;      // 길게 눌러 메뉴를 띄운 직후에는 열지 않음
+    const href = a.dataset.n ? safeHref(a.getAttribute('href')) : toHref(a.textContent);
     if (href) window.open(href, '_blank', 'noopener');
   }, true);
 
@@ -926,6 +986,7 @@
   });
 
   ed.addEventListener('keydown', e => {
+    hideLp();
     if (e.isComposing || e.keyCode === 229) return;
     if (slash.open) {
       if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
@@ -974,6 +1035,159 @@
     setTimeout(() => { if (!ed.contains(document.activeElement)) hideSlash(); }, 150);
   });
   document.addEventListener('selectionchange', () => { if (ed.contains(getSelection().anchorNode)) refreshState(); });
+
+  // ---------- 길게 누르기 메뉴 / 링크 추가 ----------
+  const lpMenu = $('lpMenu'), lpBtn = $('lpBtn');
+  let lp = null;            // 누르고 있는 동안의 타이머
+  let lpFiredAt = 0;
+  let lpLink = null;        // 길게 누른 대상이 이름 붙인 링크면 그 링크
+  let savedRange = null;    // 링크를 넣을 자리
+
+  function blockOf(n) {
+    while (n && n.parentNode !== ed) n = n.parentNode;
+    return n && n.nodeType === 1 ? n : null;
+  }
+
+  function hideLp() { lpMenu.hidden = true; }
+  function clearLp() { if (lp) { clearTimeout(lp.timer); lp = null; } }
+
+  function currentRange() {
+    const s = getSelection();
+    return s.rangeCount && ed.contains(s.anchorNode) && ed.contains(s.focusNode) ? s.getRangeAt(0).cloneRange() : null;
+  }
+
+  function showLp(x, y, link) {
+    savedRange = currentRange();
+    if (!savedRange && document.caretRangeFromPoint) {
+      const r = document.caretRangeFromPoint(x, y);
+      if (r && ed.contains(r.startContainer)) savedRange = r;
+    }
+    lpLink = link;
+    lpBtn.textContent = link ? '🔗 링크 편집' : '🔗 링크 추가';
+    lpMenu.hidden = false;
+    const w = lpMenu.offsetWidth, h = lpMenu.offsetHeight;
+    lpMenu.style.left = Math.max(8, Math.min(x - w / 2, innerWidth - w - 8)) + 'px';
+    lpMenu.style.top = (y + 26 + h > innerHeight - 8 ? Math.max(8, y - h - 30) : y + 26) + 'px';
+  }
+
+  // 본문을 꾹 누르고 있으면 메뉴 표시
+  ed.addEventListener('pointerdown', e => {
+    hideLp(); clearLp();
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    const x = e.clientX, y = e.clientY, a = linkAt(e.target);
+    lp = { x, y, timer: setTimeout(() => {
+      lp = null;
+      lpFiredAt = Date.now();
+      showLp(x, y, a && a.dataset.n ? a : null);
+    }, 550) };
+  });
+  ed.addEventListener('pointermove', e => { if (lp && Math.hypot(e.clientX - lp.x, e.clientY - lp.y) > 10) clearLp(); });
+  ['pointerup', 'pointercancel', 'pointerleave'].forEach(t => ed.addEventListener(t, clearLp));
+  el.editor.addEventListener('scroll', () => { clearLp(); hideLp(); });
+  ed.addEventListener('input', hideLp);
+  document.addEventListener('pointerdown', e => { if (!lpMenu.contains(e.target) && !ed.contains(e.target)) hideLp(); });
+
+  // 글자를 선택했을 때도 같은 메뉴 표시 (폰에서 꾹 눌러 단어가 선택된 경우 포함)
+  let selTimer = null;
+  document.addEventListener('selectionchange', () => {
+    clearTimeout(selTimer);
+    selTimer = setTimeout(() => {
+      const r = currentRange();
+      if (!r || r.collapsed || closeSheet) return;
+      const rect = r.getBoundingClientRect();
+      if (!rect.width && !rect.height) return;
+      showLp(rect.left + rect.width / 2, rect.bottom + 6, null);
+    }, 350);
+  });
+
+  lpMenu.addEventListener('mousedown', e => e.preventDefault());
+  lpBtn.addEventListener('click', () => openLinkDialog(lpLink));
+
+  function openLinkDialog(link) {
+    hideLp(); clearLp();
+    if (closeSheet) closeSheet();
+    const range = savedRange;
+    const picked = !link && range && !range.collapsed ? range.toString().replace(/\s+/g, ' ').trim().slice(0, 80) : '';
+    const pickedIsUrl = !!picked && urlsIn(picked)[0] === picked;
+    const bg = document.createElement('div');
+    bg.className = 'sheet-bg top';
+    bg.innerHTML = `<form class="dialog" role="dialog" novalidate>
+      <div class="dlg-title">${link ? '링크 편집' : '링크 추가'}</div>
+      <label>URL<input name="url" type="url" inputmode="url" autocapitalize="off" autocomplete="off" spellcheck="false" placeholder="https://example.com"></label>
+      <label>이름<input name="name" type="text" autocomplete="off" placeholder="표시할 이름 (비우면 주소 그대로)"></label>
+      <div class="dlg-err" hidden>올바른 주소를 입력하세요</div>
+      <div class="dlg-btns">${link ? '<button type="button" class="danger" data-rm="1">링크 제거</button>' : ''}<span class="spacer"></span><button type="button" data-c="1">취소</button><button type="submit" class="primary">${link ? '완료' : '추가'}</button></div>
+    </form>`;
+    const form = bg.firstElementChild, url = form.elements.url, name = form.elements.name, err = form.querySelector('.dlg-err');
+    url.value = link ? link.getAttribute('href') : pickedIsUrl ? picked : '';
+    name.value = link ? link.textContent : pickedIsUrl ? '' : picked;
+    const close = () => { bg.remove(); document.removeEventListener('keydown', onKey); closeSheet = null; };
+    const onKey = e => { if (e.key === 'Escape') close(); };
+    bg.addEventListener('mousedown', e => { if (e.target === bg) close(); });
+    form.addEventListener('click', e => {
+      const b = e.target.closest('button');
+      if (!b) return;
+      if (b.dataset.c) close();
+      else if (b.dataset.rm) { close(); link.replaceWith(...link.childNodes); afterEdit(); }
+    });
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      const href = normUrl(url.value);
+      if (!href) { err.hidden = false; url.focus(); return; }
+      const label = name.value.trim();
+      close();
+      if (link) { link.setAttribute('href', href); link.textContent = label || href; }
+      else insertLink(href, label, range);
+      afterEdit();
+    });
+    document.addEventListener('keydown', onKey);
+    document.body.appendChild(bg);
+    closeSheet = close;
+    (url.value ? name : url).focus();
+  }
+
+  // 이름이 있으면 이름 붙인 링크로, 없으면 주소 글자 그대로(자동 링크) 넣는다
+  function insertLink(href, label, range) {
+    let r = range && ed.contains(range.startContainer) && ed.contains(range.endContainer) ? range.cloneRange() : null;
+    if (r) {
+      const sb = blockOf(r.startContainer), eb = blockOf(r.endContainer);
+      if (!sb || !eb || sb.dataset.b === 'hr' || eb.dataset.b === 'hr') r = null;
+      else if (sb !== eb) r.collapse(false);        // 여러 줄에 걸친 선택은 지우지 않고 끝에 넣음
+    }
+    if (!r) {
+      let blk = lastBlock && ed.contains(lastBlock) && lastBlock.dataset.b !== 'hr' ? lastBlock : null;
+      if (!blk) { blk = makeBlock('p'); ed.appendChild(blk); }
+      r = document.createRange();
+      r.selectNodeContents(blk);
+      r.collapse(false);
+    }
+    if (!r.collapsed) r.deleteContents();
+    const inside = (r.startContainer.nodeType === 1 ? r.startContainer : r.startContainer.parentElement).closest('a');
+    if (inside && ed.contains(inside)) { r.setStartAfter(inside); r.collapse(true); }
+    let node;
+    if (label) {
+      node = document.createElement('a');
+      node.setAttribute('href', href);
+      node.dataset.n = '1';
+      node.title = '눌러서 링크 열기';
+      node.textContent = label;
+    } else node = document.createTextNode(href);
+    r.insertNode(node);
+    const blk = blockOf(node);
+    if (blk) blk.querySelectorAll('br').forEach(b => b.remove());
+    // 이어 쓰는 글자가 링크에 붙지 않게 링크 뒤에 공백을 둔다 (이미 공백이 있으면 그 뒤로 커서만 옮김)
+    let next = node.nextSibling;
+    while (next && next.nodeType === 3 && !next.nodeValue) next = next.nextSibling;
+    if (!(next && next.nodeType === 3 && /^\s/.test(next.nodeValue))) {
+      next = document.createTextNode(' ');
+      node.after(next);
+    }
+    ed.focus();
+    getSelection().collapse(next, 1);
+  }
+
+  $('linkBtn').addEventListener('mousedown', e => e.preventDefault());
+  $('linkBtn').addEventListener('click', () => { savedRange = currentRange(); openLinkDialog(null); });
 
   // ---------- 슬래시 메뉴 ----------
   const slash = { open: false, items: [], idx: 0, block: null };
