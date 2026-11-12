@@ -189,7 +189,7 @@
   .back { display: none; align-items: center; color: var(--accent); font-size: 17px; font-weight: 500; height: 44px; padding: 0 8px 0 0; }
   .back:active { opacity: .5; }
   .editor { flex: 1; overflow-y: auto; }
-  .page { max-width: 700px; margin: 0 auto; padding: 8px 32px 96px; }
+  .page { max-width: 700px; margin: 0 auto; padding: 8px 32px 150px; }
   .stamp { text-align: center; font-size: 12px; color: var(--muted); margin: 4px 0 14px; letter-spacing: .1px; }
   .icon-btn { display: block; font-size: 56px; line-height: 1.15; margin: 0 0 4px; }
   .icon-btn.ghost { font-size: 13px; color: var(--muted); padding: 4px 0 8px; line-height: 1.3; }
@@ -332,6 +332,90 @@
     font-size: 14.5px; font-weight: 600; text-align: center; box-shadow: 0 8px 24px rgba(0, 0, 0, .25); animation: fade .15s ease;
   }
 
+  /* ---------- 아이폰 메모 스타일 편집 화면: 유리 느낌의 상단·하단 버튼 ---------- */
+  :root { --glass: rgba(255, 255, 255, .86); }
+  @media (prefers-color-scheme: dark) { :root { --glass: rgba(46, 46, 50, .8); } }
+  .main { position: relative; }
+  .glass {
+    background: var(--glass); color: var(--text); border-radius: 999px;
+    -webkit-backdrop-filter: blur(16px) saturate(1.4); backdrop-filter: blur(16px) saturate(1.4);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, .1), inset 0 0 0 .5px var(--sep);
+  }
+  .bar { padding: calc(8px + env(safe-area-inset-top)) 14px 6px 14px; }
+  .back.glass { width: 44px; height: 44px; padding: 0; justify-content: center; color: var(--text); }
+  .pair { display: flex; align-items: center; padding: 0 4px; }
+  .pair .tool { width: 46px; color: var(--text); }
+  .etool {
+    position: absolute; left: 16px; right: 16px; z-index: 6; pointer-events: none;
+    bottom: calc(18px + var(--kb, 0px) + env(safe-area-inset-bottom));
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .etool > * { pointer-events: auto; }
+  .etools { display: flex; align-items: center; padding: 0 6px; }
+  .etools .tool { width: 54px; height: 56px; color: var(--text); }
+  .etool .round { width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
+  .etool .round:active { transform: scale(.94); }
+  .tool.on2 { color: var(--accent) !important; }
+
+  /* 첨부 메뉴 */
+  .pop {
+    position: fixed; z-index: 46; min-width: 272px; padding: 8px 0; border-radius: 24px; color: var(--text);
+    background: var(--glass); -webkit-backdrop-filter: blur(20px) saturate(1.5); backdrop-filter: blur(20px) saturate(1.5);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, .25), inset 0 0 0 .5px var(--sep); animation: fade .12s ease;
+  }
+  .pop button { display: flex; align-items: center; gap: 16px; width: 100%; padding: 0 24px; height: 54px; font-size: 17px; text-align: left; }
+  .pop button:active { background: var(--field); }
+  .pop .pop-sep { height: 1px; margin: 6px 22px; background: var(--sep); }
+
+  /* 첨부된 파일 */
+  .ed > div[data-b="att"] { padding: 6px 0; min-height: 0; user-select: none; -webkit-user-select: none; }
+  .ed > div[data-b="att"]::after { content: none !important; }
+  .att { position: relative; display: inline-block; max-width: 100%; vertical-align: top; border-radius: 16px; overflow: hidden; background: var(--field); }
+  .att-wait { width: 120px; height: 72px; }
+  .att.att-audio, .att.att-file { background: transparent; overflow: visible; }
+  .att img, .att video { display: block; max-width: 100%; max-height: 440px; border-radius: 16px; }
+  .att img { cursor: zoom-in; }
+  .att-audio { display: block; width: min(340px, 100%); padding: 12px 12px 10px; background: var(--card); box-shadow: inset 0 0 0 1px var(--sep); border-radius: 16px; }
+  .att-audio audio { display: block; width: 100%; height: 40px; }
+  .att-cap { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 8px; padding-right: 26px; }
+  .att-cap span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .att-file { display: flex; align-items: center; gap: 12px; width: min(340px, 100%); padding: 13px 40px 13px 14px; background: var(--card); box-shadow: inset 0 0 0 1px var(--sep); border-radius: 16px; cursor: pointer; color: var(--accent); }
+  .att-miss { cursor: default; color: var(--muted); }
+  .att-meta { min-width: 0; color: var(--text); }
+  .att-name { font-size: 15px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .att-size { font-size: 12.5px; color: var(--muted); margin-top: 1px; }
+  .att-x {
+    position: absolute; top: 7px; right: 7px; width: 26px; height: 26px; border-radius: 50%;
+    background: rgba(0, 0, 0, .55); color: #fff; font-size: 12px; line-height: 26px; text-align: center; cursor: pointer;
+  }
+  .lightbox { position: fixed; inset: 0; z-index: 70; background: rgba(0, 0, 0, .92); display: flex; align-items: center; justify-content: center; animation: fade .15s ease; }
+  .lightbox img { max-width: 100%; max-height: 100%; object-fit: contain; }
+  .lightbox button { position: absolute; top: calc(14px + env(safe-area-inset-top)); right: 16px; width: 40px; height: 40px; border-radius: 50%; background: rgba(255, 255, 255, .18); color: #fff; font-size: 16px; }
+
+  /* 오디오 녹음 */
+  .rec-time { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 8px 0 20px; font-size: 44px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -1px; }
+  .rec-time i { width: 14px; height: 14px; border-radius: 50%; background: var(--danger); animation: pulse 1s ease-in-out infinite; }
+  @keyframes pulse { 50% { opacity: .25; } }
+
+  /* 손글씨 */
+  .draw-bg { position: fixed; inset: 0; z-index: 55; background: var(--bg); display: flex; justify-content: center; animation: fade .15s ease; }
+  .draw { width: 100%; max-width: 780px; display: flex; flex-direction: column; padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom); }
+  .draw-top { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; }
+  .dtitle { font-size: 17px; font-weight: 700; }
+  .dbtn { font-size: 16px; font-weight: 500; color: var(--accent); padding: 8px 10px; border-radius: 10px; }
+  .dbtn.strong { font-weight: 700; }
+  .dbtn:active { opacity: .5; }
+  .draw-board { flex: 1; min-height: 0; margin: 4px 14px; border-radius: 18px; overflow: hidden; background: #fff; box-shadow: var(--shadow), inset 0 0 0 .5px var(--sep); }
+  .draw-board canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: crosshair; }
+  .draw-tools { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; padding: 12px 16px 14px; }
+  .colors { display: flex; align-items: center; gap: 12px; }
+  .clr { width: 30px; height: 30px; border-radius: 50%; background: var(--c); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .14); }
+  .clr.on { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--c); }
+  .sizes { display: flex; gap: 6px; }
+  .sz { width: 38px; height: 38px; border-radius: 11px; display: flex; align-items: center; justify-content: center; background: var(--field); color: var(--text); }
+  .sz i { display: block; border-radius: 50%; background: currentColor; }
+  .sz.on { background: var(--text); color: var(--bg); }
+
   /* 마우스가 있는 기기에서만 hover 표시 */
   @media (hover: hover) {
     .item:hover:not(.active) { background: var(--hover); }
@@ -348,9 +432,8 @@
     .app.editing .side { display: none; }
     .app.editing .main { display: flex; }
     .back { display: inline-flex; }
-    .page { padding: 4px 22px 96px; }
+    .page { padding: 4px 22px 150px; }
     .empty-state { display: none; }
-    .bar .tool { width: 36px; }
   }
 </style>
 </head>
@@ -381,29 +464,18 @@
 
   <section class="main" id="main">
     <div class="bar">
-      <button class="back" id="backBtn" aria-label="목록으로">
-        <svg width="12" height="20" viewBox="0 0 12 20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px"><path d="M10 2 2 10l8 8"/></svg>메모
+      <button class="back glass" id="backBtn" aria-label="목록으로">
+        <svg width="12" height="20" viewBox="0 0 12 20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2 2 10l8 8"/></svg>
       </button>
       <span class="spacer"></span>
-      <button class="tool aa" id="typeBtn" aria-label="블록 서식">Aa</button>
-      <button class="tool" id="linkBtn" aria-label="링크 추가">
-        <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1.2 1.2"/><path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1.2-1.2"/></svg>
-      </button>
-      <button class="tool" id="pinBtn" aria-label="고정">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h6l-.8 6 3 3.2H6.8L9.8 10z"/><path d="M12 13.2V20"/></svg>
-      </button>
-      <button class="tool" id="folderBtn" aria-label="폴더로 이동">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 7.5a2 2 0 0 1 2-2h3.6l2 2h7.4a2 2 0 0 1 2 2V16a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/></svg>
-      </button>
-      <button class="tool" id="shareBtn" aria-label="공유">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3.5M8 7l4-4 4 4"/><path d="M8.5 10.5H7A2.5 2.5 0 0 0 4.5 13v5A2.5 2.5 0 0 0 7 20.5h10a2.5 2.5 0 0 0 2.5-2.5v-5a2.5 2.5 0 0 0-2.5-2.5h-1.5"/></svg>
-      </button>
-      <button class="tool" id="delBtn" aria-label="삭제">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12.5A1.5 1.5 0 0 0 8.5 21h7a1.5 1.5 0 0 0 1.5-1.5L18 7M9 7V4.5A.5.5 0 0 1 9.5 4h5a.5.5 0 0 1 .5.5V7"/></svg>
-      </button>
-      <button class="tool" id="newBtn2" aria-label="새로운 메모">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4H6.5A2.5 2.5 0 0 0 4 6.5v11A2.5 2.5 0 0 0 6.5 20h11a2.5 2.5 0 0 0 2.5-2.5V12"/><path d="M18.4 3.6a1.8 1.8 0 0 1 2.5 2.5L12 15l-3.5 1 1-3.5z"/></svg>
-      </button>
+      <div class="pair glass">
+        <button class="tool" id="shareBtn" aria-label="공유">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3.5M8 7l4-4 4 4"/><path d="M8.5 10.5H7A2.5 2.5 0 0 0 4.5 13v5A2.5 2.5 0 0 0 7 20.5h10a2.5 2.5 0 0 0 2.5-2.5v-5a2.5 2.5 0 0 0-2.5-2.5h-1.5"/></svg>
+        </button>
+        <button class="tool" id="moreEdBtn" aria-label="더보기">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+        </button>
+      </div>
     </div>
     <div class="editor" id="editor">
       <div class="page">
@@ -413,6 +485,22 @@
         <div class="tlinks" id="tlinks" hidden></div>
         <div class="ed" id="ed" contenteditable="true" spellcheck="false" role="textbox" aria-multiline="true" aria-label="본문"></div>
       </div>
+    </div>
+    <div class="etool" id="etool">
+      <div class="etools glass">
+        <button class="tool" id="checkBtn" aria-label="체크리스트">
+          <svg width="27" height="27" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="6.5" r="2.6"/><path d="M4.5 6.6l.8.9 1.5-1.8"/><circle cx="5.5" cy="16.5" r="2.6"/><path d="M11.5 6.5H21M11.5 16.5H21"/></svg>
+        </button>
+        <button class="tool" id="attachBtn" aria-label="첨부">
+          <svg width="27" height="27" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11.5l-8 8a5 5 0 0 1-7-7l8.5-8.5a3.3 3.3 0 0 1 4.7 4.7L9.7 17.2a1.7 1.7 0 0 1-2.4-2.4l7.8-7.8"/></svg>
+        </button>
+        <button class="tool" id="drawBtn" aria-label="손글씨">
+          <svg width="27" height="27" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path d="M8.3 16.5l3.7-9 3.7 9M9.8 13.6h4.4"/></svg>
+        </button>
+      </div>
+      <button class="glass round" id="newBtn2" aria-label="새로운 메모">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4H6.5A2.5 2.5 0 0 0 4 6.5v11A2.5 2.5 0 0 0 6.5 20h11a2.5 2.5 0 0 0 2.5-2.5V12"/><path d="M18.4 3.6a1.8 1.8 0 0 1 2.5 2.5L12 15l-3.5 1 1-3.5z"/></svg>
+      </button>
     </div>
     <div class="empty-state" id="emptyState" hidden>메모를 선택하세요</div>
   </section>
@@ -428,7 +516,7 @@
   const $ = id => document.getElementById(id);
   const el = {
     app: $('app'), list: $('list'), search: $('search'), count: $('count'), chips: $('chips'),
-    bigTitle: $('bigTitle'), more: $('moreBtn'), pin: $('pinBtn'), iconBtn: $('iconBtn'),
+    bigTitle: $('bigTitle'), more: $('moreBtn'), check: $('checkBtn'), etool: $('etool'), iconBtn: $('iconBtn'),
     title: $('title'), tlinks: $('tlinks'), ed: $('ed'), stamp: $('stamp'), slash: $('slash'),
     editor: $('editor'), empty: $('emptyState'), bar: document.querySelector('.bar'),
   };
@@ -444,7 +532,7 @@
   const EMOJI = ['📝','📒','📌','✅','💡','⭐','🔥','🎯','📅','📚','💼','🏠','🛒','✈️','🍎','☕','🎵','🎬','💻','📱','🔑','💰','❤️','🌱','🌙','☀️','🌈','🎁','🧠','🍳','🎨','📷','🚗','🎮','🧳','💊','📞','✏️','🔖','🎉'];
 
   // 블록 종류: p h1 h2 h3 ul ol todo quote code hr
-  const BLOCKS = new Set(['p', 'h1', 'h2', 'h3', 'ul', 'ol', 'todo', 'quote', 'code', 'hr']);
+  const BLOCKS = new Set(['p', 'h1', 'h2', 'h3', 'ul', 'ol', 'todo', 'quote', 'code', 'hr', 'att']);
   const INLINE = new Set(['B', 'I', 'U', 'S', 'STRONG', 'EM', 'STRIKE']);
   const SLASH = [
     { k: 'p',     ic: 'T',   name: '텍스트',        ds: '일반 텍스트',      keys: 'text p 텍스트 본문' },
@@ -477,7 +565,7 @@
     const d = document.createElement('div');
     d.dataset.b = type;
     if (done) d.dataset.done = '1';
-    if (type === 'hr') d.contentEditable = 'false'; else d.innerHTML = '<br>';
+    if (type === 'hr' || type === 'att') d.contentEditable = 'false'; else d.innerHTML = '<br>';
     return d;
   }
 
@@ -507,6 +595,7 @@
       if (c.nodeType === 1 && c.tagName === 'DIV') {
         loose = null;
         const t = BLOCKS.has(c.dataset.b) ? c.dataset.b : 'p';
+        if (t === 'att') { const a = makeAtt(c.dataset.k, c.dataset.id, c.dataset.name, c.dataset.size); if (a) out.appendChild(a); return; }
         const b = makeBlock(t, c.dataset.done === '1' && t === 'todo');
         if (t !== 'hr') { b.innerHTML = ''; c.childNodes.forEach(x => add(x, b)); }
         out.appendChild(b);
@@ -515,8 +604,8 @@
         add(c, loose);
       }
     });
-    out.querySelectorAll('div').forEach(b => { if (b.dataset.b !== 'hr' && !b.textContent && !b.querySelector('br')) b.innerHTML = '<br>'; });
-    if (!out.firstElementChild) out.appendChild(makeBlock('p'));
+    out.querySelectorAll('div').forEach(b => { if (b.dataset.b !== 'hr' && b.dataset.b !== 'att' && !b.textContent && !b.querySelector('br')) b.innerHTML = '<br>'; });
+    if (!out.firstElementChild || out.lastElementChild.dataset.b === 'att') out.appendChild(makeBlock('p'));
     return out.innerHTML;
   }
 
@@ -524,7 +613,7 @@
   const blocksToHtml = list => list.map(([t, s, done]) => `<div data-b="${t}"${done ? ' data-done="1"' : ''}>${esc(s)}</div>`).join('');
 
   function plainText() {
-    return [...ed.children].map(b => b.dataset.b === 'hr' ? '' : b.textContent.replace(/ /g, ' ')).join('\n').replace(/\n+$/, '');
+    return [...ed.children].map(b => (b.dataset.b === 'hr' || b.dataset.b === 'att') ? '' : b.textContent.replace(/ /g, ' ')).join('\n').replace(/\n+$/, '');
   }
 
   // ---------- 데이터 ----------
@@ -578,6 +667,11 @@
 
   // 목록 미리보기: 줄바꿈을 살려 최대 3줄 (검색 중이면 일치한 줄부터)
   // 메모 안의 링크 목록: 이름 붙인 링크 먼저, 그다음 제목·본문에 적은 주소
+  // 첨부 파일만 있는 메모의 미리보기 글
+  const attLabel = n => {
+    const c = ((n.html || '').match(/data-b="att"/g) || []).length;
+    return c ? '첨부 파일 ' + c + '개' : '추가 텍스트 없음';
+  };
   const linkCache = new Map();
   function noteLinks(n) {
     const key = n.title + '\u0000' + (n.html != null ? n.html : n.body);
@@ -658,7 +752,7 @@
       <button class="act del" data-act="del">${ICON.trash}<span>삭제</span></button>
       <button class="item${n.id === currentId ? ' active' : ''}" data-id="${n.id}"><div class="in">
         <div class="t">${n.icon ? esc(n.icon) + ' ' : ''}${title}</div>
-        <div class="p"><b>${rowDate(n.updated)}</b>${highlight(snippet(n, q) || (links.length ? '' : '추가 텍스트 없음'), q)}</div>
+        <div class="p"><b>${rowDate(n.updated)}</b>${highlight(snippet(n, q) || (links.length ? '' : attLabel(n)), q)}</div>
         ${links.length ? `<div class="lks">${links.slice(0, 3).map(l => `<span class="lk" data-href="${esc(l.href)}"><span>${esc(l.label)}</span></span>`).join('')}${links.length > 3 ? `<span class="lk more">+${links.length - 3}</span>` : ''}</div>` : ''}
         ${showFolder ? `<div class="f">${ICON.folder}${esc(folderName(n.folder))}</div>` : ''}
       </div></button>
@@ -707,21 +801,22 @@
 
   function renderEditor(force) {
     const n = current();
-    el.bar.hidden = el.editor.hidden = !n;
+    el.bar.hidden = el.editor.hidden = el.etool.hidden = !n;
     el.empty.hidden = !!n;
     if (!n) { el.app.classList.remove('editing'); loadedId = null; hideSlash(); return; }
     if (el.title.value !== n.title) el.title.value = n.title;
     fitTitle();
     renderTitleLinks();
     if (force || loadedId !== n.id) {
+      revokeUrls();
       ed.innerHTML = sanitize(n.html != null ? n.html : fromPlain(n.body));
       loadedId = n.id;
       lastBlock = null;
       hideSlash();
       refreshState();
+      ed.querySelectorAll('[data-b="att"]').forEach(hydrate);
     }
     el.stamp.textContent = stampText(n);
-    el.pin.classList.toggle('on', !!n.pinned);
     renderIcon(n);
   }
 
@@ -766,6 +861,7 @@
     const list = filtered();
     const idx = list.findIndex(x => x.id === id);
     notes = notes.filter(x => x.id !== id);
+    attIds(n.html).forEach(delBlob);
     if (id === currentId) {
       const rest = filtered();
       const next = rest[Math.min(Math.max(idx, 0), rest.length - 1)];
@@ -821,6 +917,7 @@
     ed.querySelectorAll('.cur').forEach(b => b.classList.remove('cur'));
     const b = getBlock();
     if (b) { b.classList.add('cur'); lastBlock = b; }
+    el.check.classList.toggle('on2', !!lastBlock && ed.contains(lastBlock) && lastBlock.dataset.b === 'todo');
     [...ed.children].forEach(c => c.classList.toggle('empty', c.textContent === ''));
     if (slash.open && b !== slash.block) hideSlash();
     linkAll(b);
@@ -858,7 +955,7 @@
 
   function linkify(blk) {
     const t = blk.dataset.b;
-    const want = t === 'hr' || t === 'code' ? [] : textRuns(blk).flatMap(urlsIn);
+    const want = t === 'hr' || t === 'att' || t === 'code' ? [] : textRuns(blk).flatMap(urlsIn);
     const links = [...blk.querySelectorAll('a:not([data-n])')];
     if (want.join('\n') === links.map(a => a.textContent).join('\n')) return false;
     links.forEach(a => a.replaceWith(...a.childNodes));
@@ -998,7 +1095,7 @@
     e.preventDefault();
     const t = blk.dataset.b;
     const text = blk.textContent.replace(/ /g, ' ');
-    if (t === 'hr') { const p = makeBlock('p'); blk.after(p); placeCaret(p); }
+    if (t === 'hr' || t === 'att') { const p = makeBlock('p'); blk.after(p); placeCaret(p); }
     else if (t === 'p' && text.trim() === '---') setType(blk, 'hr', true);
     else if (text === '' && t !== 'p') setType(blk, 'p', true);
     else splitAtCaret(blk);
@@ -1010,6 +1107,7 @@
     if (!s.rangeCount || !s.isCollapsed) return;
     const blk = getBlock();
     if (!blk) return;
+    if (blk.dataset.b === 'att' || blk.dataset.b === 'hr') return;
     const pre = document.createRange();
     pre.selectNodeContents(blk);
     pre.setEnd(s.anchorNode, s.anchorOffset);
@@ -1018,10 +1116,10 @@
       e.preventDefault();
       setType(blk, 'p', false);
       afterEdit();
-    } else if (blk.previousElementSibling && blk.previousElementSibling.dataset.b === 'hr') {
+    } else if (blk.previousElementSibling && ['hr', 'att'].includes(blk.previousElementSibling.dataset.b)) {
       e.preventDefault();
-      blk.previousElementSibling.remove();
-      afterEdit();
+      const prev = blk.previousElementSibling;
+      if (prev.dataset.b === 'att') removeAtt(prev); else { prev.remove(); afterEdit(); }
     }
   }
 
@@ -1145,6 +1243,7 @@
   // 본문을 꾹 누르고 있으면 메뉴 표시
   ed.addEventListener('pointerdown', e => {
     hideLp(); clearLp();
+    if (e.target.closest && e.target.closest('.att')) return;
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     const x = e.clientX, y = e.clientY, a = linkAt(e.target);
     lp = { x, y, timer: setTimeout(() => {
@@ -1258,6 +1357,388 @@
     getSelection().collapse(next, 1);
   }
 
+  // ---------- 첨부 (사진·비디오·오디오·파일·손글씨) ----------
+  // 파일 내용은 용량이 커서 localStorage 대신 IndexedDB에 두고, 메모에는 id만 저장한다.
+  const ATT_KINDS = new Set(['img', 'video', 'audio', 'file']);
+  const MAX_FILE = 100 * 1024 * 1024;
+  const AI = {
+    photo: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><circle cx="9" cy="10.5" r="1.7"/><path d="M4 17l5-4.5 3.5 3L16 12l5 5"/></svg>',
+    wave: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M5 9v6M8.5 6v12M12 3.5v17M15.5 7v10M19 10v4"/></svg>',
+    doc: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h6.5L19 8.5V19a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M13.5 3v5.5H19"/></svg>',
+    eraser: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 20h11M5.5 14.5l8-8a2 2 0 0 1 2.8 0l2.2 2.2a2 2 0 0 1 0 2.8L11 18.5H8l-2.5-2.5a1.4 1.4 0 0 1 0-1.5z"/></svg>',
+  };
+  const KIND_LABEL = { img: '사진', video: '비디오', audio: '오디오', file: '파일' };
+
+  let dbp = null;
+  const openDb = () => dbp || (dbp = new Promise((res, rej) => {
+    if (!window.indexedDB) { rej(new Error('no idb')); return; }
+    const r = indexedDB.open('memo-files', 1);
+    r.onupgradeneeded = () => r.result.createObjectStore('f');
+    r.onsuccess = () => res(r.result);
+    r.onerror = () => rej(r.error);
+  }).catch(e => { dbp = null; throw e; }));
+  const idb = (mode, fn) => openDb().then(db => new Promise((res, rej) => {
+    const t = db.transaction('f', mode);
+    const rq = fn(t.objectStore('f'));
+    t.oncomplete = () => res(rq && rq.result);
+    t.onerror = t.onabort = () => rej(t.error);
+  }));
+  const putBlob = (id, blob, name) => idb('readwrite', s => s.put({ blob, name, type: blob.type }, id));
+  const getBlob = id => idb('readonly', s => s.get(id));
+  const delBlob = id => idb('readwrite', s => s.delete(id)).catch(() => {});
+
+  const attIds = html => [...String(html || '').matchAll(/data-id="([a-z0-9]+)"/gi)].map(m => m[1]);
+  const fmtSize = b => b < 1024 * 1024 ? Math.max(1, Math.round(b / 1024)) + ' KB' : (b / 1024 / 1024).toFixed(1) + ' MB';
+
+  // 안 쓰는 첨부 파일 정리 (메모에서 지워진 첨부)
+  async function gcBlobs() {
+    try {
+      const keys = await idb('readonly', s => s.getAllKeys());
+      if (!keys || !keys.length) return;
+      const used = new Set(notes.flatMap(n => attIds(n.html)));
+      for (const k of keys) if (!used.has(k)) await delBlob(k);
+    } catch (e) {}
+  }
+
+  function makeAtt(kind, id, name, size) {
+    if (!ATT_KINDS.has(kind) || !/^[a-z0-9]{4,40}$/i.test(id || '')) return null;
+    const d = document.createElement('div');
+    d.dataset.b = 'att'; d.dataset.k = kind; d.dataset.id = id;
+    d.dataset.name = String(name || '').slice(0, 120);
+    if (+size > 0) d.dataset.size = String(+size);
+    d.contentEditable = 'false';
+    return d;
+  }
+
+  const objUrls = [];
+  const revokeUrls = () => objUrls.splice(0).forEach(u => URL.revokeObjectURL(u));
+
+  // 저장된 id로 파일을 읽어 화면에 그린다 (저장되는 HTML에는 내용을 넣지 않음)
+  async function hydrate(blk) {
+    if (blk.dataset.b !== 'att' || blk.firstElementChild) return;
+    const k = blk.dataset.k, name = blk.dataset.name || '';
+    const x = '<button class="att-x" type="button" aria-label="첨부 삭제">✕</button>';
+    blk.innerHTML = '<div class="att att-wait"></div>';
+    let rec = null;
+    try { rec = await getBlob(blk.dataset.id); } catch (e) {}
+    if (!blk.isConnected) return;
+    if (!rec || !rec.blob) { blk.innerHTML = `<div class="att att-file att-miss"><div class="att-meta"><div class="att-name">${esc(name || KIND_LABEL[k])}</div><div class="att-size">파일을 불러올 수 없습니다</div></div>${x}</div>`; return; }
+    const url = URL.createObjectURL(rec.blob);
+    objUrls.push(url);
+    let inner;
+    if (k === 'img') inner = `<img src="${url}" alt="${esc(name)}" draggable="false">`;
+    else if (k === 'video') inner = `<video src="${url}" controls playsinline preload="metadata"></video>`;
+    else if (k === 'audio') inner = `<div class="att-audio"><div class="att-cap">${AI.wave.replace(/26/g, '18')}<span>${esc(name)}</span></div><audio src="${url}" controls preload="metadata"></audio></div>`;
+    else inner = `<div class="att-file">${AI.doc}<div class="att-meta"><div class="att-name">${esc(name)}</div><div class="att-size">${fmtSize(rec.blob.size)}</div></div></div>`;
+    blk.innerHTML = `<div class="att att-${k}">${inner}${x}</div>`;
+  }
+
+  function removeAtt(blk) {
+    if (!blk) return;
+    const id = blk.dataset.id;
+    blk.remove();
+    if (!ed.firstElementChild) ensureBlocks();
+    afterEdit();
+    delBlob(id);
+  }
+
+  async function downloadAtt(blk) {
+    try {
+      const rec = await getBlob(blk.dataset.id);
+      if (!rec) return;
+      const url = URL.createObjectURL(rec.blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = blk.dataset.name || 'file';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 30000);
+    } catch (e) { toast('파일을 열 수 없습니다'); }
+  }
+
+  function lightbox(src) {
+    const bg = document.createElement('div');
+    bg.className = 'lightbox';
+    bg.innerHTML = `<img src="${src}" alt=""><button type="button" aria-label="닫기">✕</button>`;
+    const close = () => { bg.remove(); document.removeEventListener('keydown', onKey); };
+    const onKey = e => { if (e.key === 'Escape') close(); };
+    bg.addEventListener('click', close);
+    document.addEventListener('keydown', onKey);
+    document.body.appendChild(bg);
+  }
+
+  ed.addEventListener('click', e => {
+    const t = e.target.closest ? e.target : e.target.parentElement;
+    if (!t) return;
+    const x = t.closest('.att-x');
+    if (x) { e.preventDefault(); e.stopPropagation(); removeAtt(x.closest('[data-b="att"]')); return; }
+    const img = t.closest('.att img');
+    if (img) { e.preventDefault(); lightbox(img.src); return; }
+    const f = t.closest('.att-file:not(.att-miss)');
+    if (f) { e.preventDefault(); downloadAtt(f.closest('[data-b="att"]')); }
+  }, true);
+
+  // 현재 줄 아래에 첨부 블록을 넣는다
+  async function addAttachment(blob, kind, name) {
+    const id = uid();
+    try { await putBlob(id, blob, name); }
+    catch (e) { toast('파일을 저장할 수 없습니다 (저장 공간 확인)'); return false; }
+    if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+    const blk = makeAtt(kind, id, name, blob.size);
+    let cur = lastBlock && ed.contains(lastBlock) ? lastBlock : ed.lastElementChild;
+    if (!cur) { ensureBlocks(); cur = ed.lastElementChild; }
+    if (cur.dataset.b === 'p' && cur.textContent === '') cur.replaceWith(blk); else cur.after(blk);
+    let next = blk.nextElementSibling;
+    if (!next || next.dataset.b === 'att') { next = makeBlock('p'); blk.after(next); }
+    hydrate(blk);
+    afterEdit();
+    lastBlock = next;        // 여러 개를 이어서 붙일 때 순서가 뒤집히지 않게
+    return true;
+  }
+
+  // 큰 사진은 줄여서 저장 (저장 공간 절약)
+  async function shrinkImage(file) {
+    if (file.type !== 'image/jpeg') return file;
+    try {
+      const bmp = await createImageBitmap(file);
+      const scale = Math.min(1, 1800 / Math.max(bmp.width, bmp.height));
+      if (scale === 1 && file.size < 1.5 * 1024 * 1024) { if (bmp.close) bmp.close(); return file; }
+      const c = document.createElement('canvas');
+      c.width = Math.round(bmp.width * scale); c.height = Math.round(bmp.height * scale);
+      c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+      if (bmp.close) bmp.close();
+      const out = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.86));
+      return out && out.size < file.size ? out : file;
+    } catch (e) { return file; }
+  }
+
+  async function attachFiles(files) {
+    for (const f of files) {
+      if (f.size > MAX_FILE) { toast('100MB 이하의 파일만 첨부할 수 있어요'); continue; }
+      const kind = f.type.startsWith('image/') ? 'img' : f.type.startsWith('video/') ? 'video' : f.type.startsWith('audio/') ? 'audio' : 'file';
+      const blob = kind === 'img' ? await shrinkImage(f) : f;
+      await addAttachment(blob, kind, f.name || KIND_LABEL[kind]);
+    }
+  }
+
+  // 사용자의 탭 동작 안에서 바로 호출해야 파일 선택창이 열린다
+  function pickAndAttach(accept) {
+    const i = document.createElement('input');
+    i.type = 'file'; i.multiple = true;
+    if (accept) i.accept = accept;
+    i.style.display = 'none';
+    i.addEventListener('change', () => { attachFiles([...i.files]); i.remove(); });
+    i.addEventListener('cancel', () => i.remove());
+    document.body.appendChild(i);
+    i.click();
+  }
+
+  // ---------- 첨부 메뉴 ----------
+  let popEl = null;
+  function closePop() {
+    if (!popEl) return;
+    popEl.remove(); popEl = null;
+    document.removeEventListener('pointerdown', popOutside, true);
+    document.removeEventListener('keydown', popKey);
+  }
+  const popOutside = e => { if (popEl && !popEl.contains(e.target)) closePop(); };
+  const popKey = e => { if (e.key === 'Escape') closePop(); };
+
+  function attachMenu() {
+    if (popEl) { closePop(); return; }
+    if (closeSheet) closeSheet();
+    const r = $('attachBtn').getBoundingClientRect();
+    const pop = document.createElement('div');
+    pop.className = 'pop';
+    pop.innerHTML = `<button type="button" data-a="media">${AI.photo}<span>사진 또는 비디오 선택</span></button>
+      <div class="pop-sep"></div>
+      <button type="button" data-a="audio">${AI.wave}<span>오디오 녹음</span></button>
+      <button type="button" data-a="file">${AI.doc}<span>파일 첨부</span></button>`;
+    document.body.appendChild(pop);
+    pop.style.left = Math.max(12, Math.min(r.left - 8, innerWidth - pop.offsetWidth - 12)) + 'px';
+    pop.style.bottom = (innerHeight - r.top + 12) + 'px';
+    pop.addEventListener('click', e => {
+      const b = e.target.closest('button');
+      if (!b) return;
+      closePop();
+      if (b.dataset.a === 'media') pickAndAttach('image/*,video/*');
+      else if (b.dataset.a === 'file') pickAndAttach('');
+      else recordAudio();
+    });
+    popEl = pop;
+    setTimeout(() => { document.addEventListener('pointerdown', popOutside, true); document.addEventListener('keydown', popKey); }, 0);
+  }
+
+  // ---------- 오디오 녹음 ----------
+  async function recordAudio() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.MediaRecorder) { toast('이 브라우저에서는 녹음을 지원하지 않습니다'); return; }
+    let stream;
+    try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
+    catch (e) { toast('마이크 사용 권한이 필요합니다'); return; }
+    const mime = ['audio/mp4', 'audio/webm;codecs=opus', 'audio/webm'].find(t => MediaRecorder.isTypeSupported(t)) || '';
+    let rec;
+    try { rec = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined); }
+    catch (e) { stream.getTracks().forEach(t => t.stop()); toast('녹음을 시작할 수 없습니다'); return; }
+    if (closeSheet) closeSheet();
+    const chunks = [];
+    rec.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+    const bg = document.createElement('div');
+    bg.className = 'sheet-bg top';
+    bg.innerHTML = `<div class="dialog rec" role="dialog">
+      <div class="dlg-title">오디오 녹음</div>
+      <div class="rec-time"><i></i><span id="recTime">0:00</span></div>
+      <div class="dlg-btns"><button type="button" data-r="cancel">취소</button><span class="spacer"></span><button type="button" class="primary" data-r="done">녹음 완료</button></div>
+    </div>`;
+    const t0 = Date.now();
+    const timeEl = bg.querySelector('#recTime');
+    const timer = setInterval(() => {
+      const s = Math.floor((Date.now() - t0) / 1000);
+      timeEl.textContent = Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+    }, 250);
+    let save = false;
+    const finish = ok => { save = ok; clearInterval(timer); if (rec.state !== 'inactive') rec.stop(); else rec.onstop(); };
+    const onKey = e => { if (e.key === 'Escape') finish(false); };
+    rec.onstop = async () => {
+      stream.getTracks().forEach(t => t.stop());
+      bg.remove(); document.removeEventListener('keydown', onKey); closeSheet = null;
+      if (!save || !chunks.length) return;
+      const blob = new Blob(chunks, { type: rec.mimeType || mime || 'audio/webm' });
+      await addAttachment(blob, 'audio', '오디오 녹음 ' + new Date().toLocaleTimeString('ko-KR', { hour: 'numeric', minute: '2-digit' }));
+    };
+    bg.addEventListener('click', e => {
+      const b = e.target.closest('button');
+      if (b) finish(b.dataset.r === 'done');
+    });
+    document.addEventListener('keydown', onKey);
+    document.body.appendChild(bg);
+    closeSheet = () => finish(false);
+    rec.start(1000);
+  }
+
+  // ---------- 손글씨 ----------
+  function openDraw() {
+    if (popEl) closePop();
+    if (closeSheet) closeSheet();
+    const COLORS = ['#1d1d1f', '#e5484d', '#f5a623', '#2f80ed', '#27a844'];
+    const bg = document.createElement('div');
+    bg.className = 'draw-bg';
+    bg.innerHTML = `<div class="draw">
+      <div class="draw-top"><button type="button" class="dbtn" data-d="cancel">취소</button><div class="dtitle">손글씨</div><button type="button" class="dbtn strong" data-d="done">완료</button></div>
+      <div class="draw-board"><canvas></canvas></div>
+      <div class="draw-tools">
+        <div class="colors">${COLORS.map((c, i) => `<button type="button" class="clr${i ? '' : ' on'}" data-c="${c}" style="--c:${c}" aria-label="색상"></button>`).join('')}</div>
+        <div class="sizes"><button type="button" class="sz on" data-s="3" aria-label="가늘게"><i style="width:5px;height:5px"></i></button><button type="button" class="sz" data-s="8" aria-label="굵게"><i style="width:12px;height:12px"></i></button><button type="button" class="sz" data-s="22" data-e="1" aria-label="지우개">${AI.eraser}</button></div>
+        <div class="acts"><button type="button" class="dbtn" data-d="undo">되돌리기</button><button type="button" class="dbtn" data-d="clear">모두 지우기</button></div>
+      </div></div>`;
+    document.body.appendChild(bg);
+    const board = bg.querySelector('.draw-board'), cv = bg.querySelector('canvas');
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const W = board.clientWidth, H = board.clientHeight;
+    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+    const ctx = cv.getContext('2d');
+    ctx.scale(dpr, dpr);
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    let color = COLORS[0], size = 3, erase = false, cur = null;
+    const strokes = [];
+
+    const paint = s => {
+      ctx.strokeStyle = s.erase ? '#ffffff' : s.color; ctx.fillStyle = ctx.strokeStyle; ctx.lineWidth = s.size;
+      const p = s.pts;
+      if (p.length === 1) { ctx.beginPath(); ctx.arc(p[0][0], p[0][1], s.size / 2, 0, Math.PI * 2); ctx.fill(); return; }
+      ctx.beginPath(); ctx.moveTo(p[0][0], p[0][1]);
+      for (let i = 1; i < p.length - 1; i++) ctx.quadraticCurveTo(p[i][0], p[i][1], (p[i][0] + p[i + 1][0]) / 2, (p[i][1] + p[i + 1][1]) / 2);
+      ctx.lineTo(p[p.length - 1][0], p[p.length - 1][1]);
+      ctx.stroke();
+    };
+    const redraw = () => { ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, W, H); strokes.forEach(paint); };
+    redraw();
+
+    const pos = e => { const r = cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+    cv.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      try { cv.setPointerCapture(e.pointerId); } catch (_) {}
+      cur = { color, size, erase, pts: [pos(e)] };
+      strokes.push(cur);
+      paint(cur);
+    });
+    cv.addEventListener('pointermove', e => {
+      if (!cur) return;
+      cur.pts.push(pos(e));
+      redraw();
+    });
+    const end = () => { cur = null; };
+    cv.addEventListener('pointerup', end);
+    cv.addEventListener('pointercancel', end);
+
+    const close = () => { bg.remove(); document.removeEventListener('keydown', onKey); };
+    const onKey = e => { if (e.key === 'Escape') close(); };
+    document.addEventListener('keydown', onKey);
+    bg.addEventListener('click', e => {
+      const b = e.target.closest('button');
+      if (!b) return;
+      if (b.dataset.c) {
+        color = b.dataset.c; erase = false;
+        bg.querySelectorAll('.clr').forEach(x => x.classList.toggle('on', x === b));
+        bg.querySelectorAll('.sz').forEach(x => x.classList.toggle('on', !x.dataset.e && x.dataset.s === String(size)));
+      } else if (b.dataset.s) {
+        erase = !!b.dataset.e; size = +b.dataset.s;
+        bg.querySelectorAll('.sz').forEach(x => x.classList.toggle('on', x === b));
+      } else if (b.dataset.d === 'undo') { strokes.pop(); redraw(); }
+      else if (b.dataset.d === 'clear') { strokes.length = 0; redraw(); }
+      else if (b.dataset.d === 'cancel') close();
+      else if (b.dataset.d === 'done') {
+        if (!strokes.length) { close(); return; }
+        cv.toBlob(async blob => {
+          close();
+          if (blob) await addAttachment(blob, 'img', '손글씨 ' + new Date().toLocaleTimeString('ko-KR', { hour: 'numeric', minute: '2-digit' }) + '.png');
+        }, 'image/png');
+      }
+    });
+  }
+
+  // ---------- 체크리스트 / 더보기 ----------
+  function toggleCheck() {
+    let blk = lastBlock && ed.contains(lastBlock) ? lastBlock : ed.lastElementChild;
+    if (!blk) return;
+    if (blk.dataset.b === 'att' || blk.dataset.b === 'hr') {
+      const p = makeBlock('todo');
+      blk.after(p);
+      placeCaret(p);
+    } else {
+      blk.removeAttribute('contenteditable');
+      blk.dataset.b = blk.dataset.b === 'todo' ? 'p' : 'todo';
+      blk.removeAttribute('data-done');
+      placeCaret(blk, true);
+    }
+    afterEdit();
+  }
+
+  function moreMenu() {
+    const n = current();
+    if (!n) return;
+    const rng = currentRange();
+    sheet('', [
+      { label: n.pinned ? '고정 해제' : '고정', run: () => togglePin(n.id) },
+      { label: '폴더로 이동', run: () => moveSheet() },
+      { label: '링크 추가', run: () => { savedRange = rng; openLinkDialog(null); } },
+      { label: '블록 서식', run: () => typeSheet() },
+      { label: '삭제', danger: true, run: () => askDelete(n.id) },
+    ]);
+  }
+
+  ['checkBtn', 'attachBtn', 'drawBtn', 'shareBtn', 'moreEdBtn'].forEach(id => $(id).addEventListener('mousedown', e => e.preventDefault()));
+  $('checkBtn').addEventListener('click', toggleCheck);
+  $('attachBtn').addEventListener('click', attachMenu);
+  $('drawBtn').addEventListener('click', openDraw);
+  $('moreEdBtn').addEventListener('click', moreMenu);
+
+  // 키보드가 올라오면 하단 도구를 키보드 위로
+  if (window.visualViewport) {
+    const vv = window.visualViewport;
+    const sync = () => document.documentElement.style.setProperty('--kb', Math.max(0, window.innerHeight - vv.height - vv.offsetTop) + 'px');
+    vv.addEventListener('resize', sync);
+    vv.addEventListener('scroll', sync);
+    sync();
+  }
+
   // ---------- 공유 ----------
   let toastTimer = null;
   function toast(msg) {
@@ -1283,7 +1764,7 @@
       });
       const text = b.textContent.replace(/\u00a0/g, ' ').trimEnd();
       num = t === 'ol' ? num + 1 : 0;
-      lines.push(t === 'hr' ? '---' : t === 'ul' ? '• ' + text : t === 'ol' ? num + '. ' + text
+      lines.push(t === 'att' ? '[' + ({ img: '사진', video: '비디오', audio: '오디오', file: '파일' }[b.dataset.k] || '첨부') + '] ' + (b.dataset.name || '') : t === 'hr' ? '---' : t === 'ul' ? '• ' + text : t === 'ol' ? num + '. ' + text
         : t === 'todo' ? (b.dataset.done ? '☑ ' : '☐ ') + text : text);
     });
     return lines.join('\n').trim();
@@ -1305,8 +1786,6 @@
   }
   $('shareBtn').addEventListener('click', shareNote);
 
-  $('linkBtn').addEventListener('mousedown', e => e.preventDefault());
-  $('linkBtn').addEventListener('click', () => { savedRange = currentRange(); openLinkDialog(null); });
 
   // ---------- 슬래시 메뉴 ----------
   const slash = { open: false, items: [], idx: 0, block: null };
@@ -1364,7 +1843,7 @@
   // 툴바 "Aa": 현재 블록 서식 바꾸기
   function typeSheet() {
     const blk = lastBlock && ed.contains(lastBlock) ? lastBlock : ed.lastElementChild;
-    if (!blk) return;
+    if (!blk || blk.dataset.b === 'att') return;
     sheet('블록 서식', SLASH.filter(i => i.k !== 'date').map(i => ({
       label: i.name, checked: blk.dataset.b === i.k,
       run: () => {
@@ -1572,11 +2051,6 @@
   el.search.addEventListener('input', () => { query = el.search.value; renderList(); });
   $('newBtn').addEventListener('click', createNote);
   $('newBtn2').addEventListener('click', createNote);
-  $('delBtn').addEventListener('click', () => current() && askDelete(currentId));
-  el.pin.addEventListener('click', () => togglePin(currentId));
-  $('folderBtn').addEventListener('click', () => moveSheet());
-  $('typeBtn').addEventListener('mousedown', e => e.preventDefault());
-  $('typeBtn').addEventListener('click', typeSheet);
   el.iconBtn.addEventListener('click', emojiSheet);
   $('backBtn').addEventListener('click', () => { el.app.classList.remove('editing'); renderList(); });
   el.title.addEventListener('input', () => {
@@ -1603,6 +2077,7 @@
 
   load();
   renderAll();
+  setTimeout(gcBlobs, 4000);
 
   // PWA: 오프라인 동작을 위한 서비스 워커 등록
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {
