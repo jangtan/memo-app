@@ -320,6 +320,14 @@
   .dlg-btns button.primary { background: var(--text); color: var(--bg); }
   .dlg-btns button.danger { background: transparent; color: var(--danger); padding: 0 6px; }
 
+  /* 잠깐 떴다 사라지는 안내 */
+  .toast {
+    position: fixed; left: 16px; right: 16px; bottom: calc(96px + env(safe-area-inset-bottom)); z-index: 60;
+    width: fit-content; max-width: calc(100% - 32px); margin: 0 auto; padding: 12px 18px; border-radius: 16px;
+    background: var(--text); color: var(--bg);
+    font-size: 14.5px; font-weight: 600; text-align: center; box-shadow: 0 8px 24px rgba(0, 0, 0, .25); animation: fade .15s ease;
+  }
+
   /* 마우스가 있는 기기에서만 hover 표시 */
   @media (hover: hover) {
     .item:hover:not(.active) { background: var(--hover); }
@@ -338,7 +346,7 @@
     .back { display: inline-flex; }
     .page { padding: 4px 22px 96px; }
     .empty-state { display: none; }
-    .bar .tool { width: 40px; }
+    .bar .tool { width: 36px; }
   }
 </style>
 </head>
@@ -382,6 +390,9 @@
       </button>
       <button class="tool" id="folderBtn" aria-label="폴더로 이동">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 7.5a2 2 0 0 1 2-2h3.6l2 2h7.4a2 2 0 0 1 2 2V16a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/></svg>
+      </button>
+      <button class="tool" id="shareBtn" aria-label="공유">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3.5M8 7l4-4 4 4"/><path d="M8.5 10.5H7A2.5 2.5 0 0 0 4.5 13v5A2.5 2.5 0 0 0 7 20.5h10a2.5 2.5 0 0 0 2.5-2.5v-5a2.5 2.5 0 0 0-2.5-2.5h-1.5"/></svg>
       </button>
       <button class="tool" id="delBtn" aria-label="삭제">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12.5A1.5 1.5 0 0 0 8.5 21h7a1.5 1.5 0 0 0 1.5-1.5L18 7M9 7V4.5A.5.5 0 0 1 9.5 4h5a.5.5 0 0 1 .5.5V7"/></svg>
@@ -574,14 +585,19 @@
       new DOMParser().parseFromString(n.html, 'text/html').querySelectorAll('a[data-n]').forEach(a =>
         push(safeHref(a.getAttribute('href')), a.textContent.trim(), true));
     }
-    for (const u of urlsIn(n.title + '\n' + n.body)) push(toHref(u), u.replace(/^https?:\/\//i, '').replace(/^www\./i, ''), false);
+    for (const u of urlsIn(n.title + '\n' + n.body)) {
+      const href = toHref(u);
+      if (href) push(href, new URL(href).hostname.replace(/^www\./i, ''), false);
+    }
     linkCache.set(n.id, { key, links });
     return links;
   }
 
   function snippet(n, q) {
     const named = q ? null : new Set(noteLinks(n).filter(l => l.named).map(l => l.label));
-    const lines = n.body.split('\n').map(s => s.trim()).filter(l => l && !(named && named.has(l)));
+    const lines = n.body.split('\n')
+      .map(l => (q ? l : l.replace(URL_RE, ' ').replace(/\s{2,}/g, ' ')).trim())
+      .filter(l => l && !(named && named.has(l)));
     const cut = (l, key) => {
       const i = key ? l.toLowerCase().indexOf(key) : -1;
       const start = i > 20 ? i - 15 : 0;
@@ -1237,6 +1253,53 @@
     ed.focus();
     getSelection().collapse(next, 1);
   }
+
+  // ---------- 공유 ----------
+  let toastTimer = null;
+  function toast(msg) {
+    document.querySelectorAll('.toast').forEach(t => t.remove());
+    const t = document.createElement('div');
+    t.className = 'toast';
+    t.textContent = msg;
+    document.body.appendChild(t);
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.remove(), 2600);
+  }
+
+  // 메모 본문을 다른 앱에 붙여넣기 좋은 글자로 (목록 기호 유지, 이름 붙인 링크는 주소를 함께)
+  function noteText(n) {
+    const doc = new DOMParser().parseFromString(sanitize(n.html != null ? n.html : fromPlain(n.body)), 'text/html');
+    const lines = [];
+    let num = 0;
+    doc.body.querySelectorAll(':scope > div').forEach(b => {
+      const t = b.dataset.b;
+      b.querySelectorAll('a[data-n]').forEach(a => {
+        const href = a.getAttribute('href'), label = a.textContent.trim();
+        a.textContent = !label || label === href ? href : label + ' (' + href + ')';
+      });
+      const text = b.textContent.replace(/\u00a0/g, ' ').trimEnd();
+      num = t === 'ol' ? num + 1 : 0;
+      lines.push(t === 'hr' ? '---' : t === 'ul' ? '• ' + text : t === 'ol' ? num + '. ' + text
+        : t === 'todo' ? (b.dataset.done ? '☑ ' : '☐ ') + text : text);
+    });
+    return lines.join('\n').trim();
+  }
+
+  async function shareNote() {
+    const n = current();
+    if (!n) return;
+    const title = n.title.trim();
+    const text = [title, noteText(n)].filter(Boolean).join('\n\n');
+    if (!text) { toast('공유할 내용이 없습니다'); return; }
+    if (navigator.share) {
+      try { await navigator.share({ title: title || '메모', text }); return; }
+      catch (e) { if (e.name === 'AbortError') return; }   // 사용자가 닫음
+    }
+    // 공유 창이 없는 브라우저(PC 등)에서는 복사
+    try { await navigator.clipboard.writeText(text); toast('메모를 복사했습니다'); }
+    catch (e) { toast('이 브라우저에서는 공유할 수 없습니다'); }
+  }
+  $('shareBtn').addEventListener('click', shareNote);
 
   $('linkBtn').addEventListener('mousedown', e => e.preventDefault());
   $('linkBtn').addEventListener('click', () => { savedRange = currentRange(); openLinkDialog(null); });
