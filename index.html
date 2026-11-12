@@ -133,6 +133,23 @@
     display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3;
   }
   .item .p b { font-weight: 500; color: var(--text); opacity: .7; margin-right: 7px; }
+  /* 목록에서 바로 여는 링크 카드 */
+  .item .lks { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; }
+  .item .lk {
+    display: inline-flex; align-items: center; gap: 7px; max-width: 100%; padding: 6px 11px 6px 7px;
+    border-radius: 10px; background: var(--bg); box-shadow: inset 0 0 0 .5px var(--sep);
+    font-size: 14px; font-weight: 600; line-height: 1.3; color: var(--text); cursor: pointer;
+  }
+  .item .lk::before {
+    content: ""; flex-shrink: 0; width: 22px; height: 22px; border-radius: 7px;
+    background: var(--accent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1.2 1.2'/%3E%3Cpath d='M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1.2-1.2'/%3E%3C/svg%3E") center/14px no-repeat;
+  }
+  .item .lk span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .item .lk::after { content: "›"; flex-shrink: 0; color: var(--accent); font-weight: 700; }
+  .item .lk:active { opacity: .6; }
+  .item .lk.more { padding: 6px 10px; color: var(--muted); font-weight: 500; cursor: default; }
+  .item .lk.more::before, .item .lk.more::after { content: none; }
+  .item.active .lk { background: var(--card); }
   .item .f { font-size: 12.5px; color: var(--muted); margin-top: 5px; display: flex; align-items: center; gap: 4px; white-space: nowrap; overflow: hidden; }
   mark { background: var(--mark); color: inherit; border-radius: 3px; }
   .none { color: var(--muted); text-align: center; padding: 64px 12px; font-size: 16px; }
@@ -545,8 +562,26 @@
   }
 
   // 목록 미리보기: 줄바꿈을 살려 최대 3줄 (검색 중이면 일치한 줄부터)
+  // 메모 안의 링크 목록: 이름 붙인 링크 먼저, 그다음 제목·본문에 적은 주소
+  const linkCache = new Map();
+  function noteLinks(n) {
+    const key = n.title + '\u0000' + (n.html != null ? n.html : n.body);
+    const hit = linkCache.get(n.id);
+    if (hit && hit.key === key) return hit.links;
+    const links = [], seen = new Set();
+    const push = (href, label, named) => { if (href && !seen.has(href)) { seen.add(href); links.push({ href, label, named }); } };
+    if (n.html && n.html.includes('data-n')) {
+      new DOMParser().parseFromString(n.html, 'text/html').querySelectorAll('a[data-n]').forEach(a =>
+        push(safeHref(a.getAttribute('href')), a.textContent.trim(), true));
+    }
+    for (const u of urlsIn(n.title + '\n' + n.body)) push(toHref(u), u.replace(/^https?:\/\//i, '').replace(/^www\./i, ''), false);
+    linkCache.set(n.id, { key, links });
+    return links;
+  }
+
   function snippet(n, q) {
-    const lines = n.body.split('\n').map(s => s.trim()).filter(Boolean);
+    const named = q ? null : new Set(noteLinks(n).filter(l => l.named).map(l => l.label));
+    const lines = n.body.split('\n').map(s => s.trim()).filter(l => l && !(named && named.has(l)));
     const cut = (l, key) => {
       const i = key ? l.toLowerCase().indexOf(key) : -1;
       const start = i > 20 ? i - 15 : 0;
@@ -596,13 +631,15 @@
   function rowHtml(n, q) {
     const showFolder = view === 'all' && n.folder && folderName(n.folder);
     const title = n.title ? highlight(n.title, q) : '새로운 메모';
+    const links = noteLinks(n);
     return `<div class="row" data-id="${n.id}">
       <button class="act pin" data-act="pin">${ICON.pin}<span>${n.pinned ? '고정 해제' : '고정'}</span></button>
       <button class="act move" data-act="move"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 7.5a2 2 0 0 1 2-2h3.6l2 2h7.4a2 2 0 0 1 2 2V16a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/></svg><span>폴더</span></button>
       <button class="act del" data-act="del">${ICON.trash}<span>삭제</span></button>
       <button class="item${n.id === currentId ? ' active' : ''}" data-id="${n.id}"><div class="in">
         <div class="t">${n.icon ? esc(n.icon) + ' ' : ''}${title}</div>
-        <div class="p"><b>${rowDate(n.updated)}</b>${highlight(snippet(n, q) || '추가 텍스트 없음', q)}</div>
+        <div class="p"><b>${rowDate(n.updated)}</b>${highlight(snippet(n, q) || (links.length ? '' : '추가 텍스트 없음'), q)}</div>
+        ${links.length ? `<div class="lks">${links.slice(0, 3).map(l => `<span class="lk" data-href="${esc(l.href)}"><span>${esc(l.label)}</span></span>`).join('')}${links.length > 3 ? `<span class="lk more">+${links.length - 3}</span>` : ''}</div>` : ''}
         ${showFolder ? `<div class="f">${ICON.folder}${esc(folderName(n.folder))}</div>` : ''}
       </div></button>
     </div>`;
@@ -1426,6 +1463,14 @@
 
   el.list.addEventListener('click', e => {
     if (suppressClick) { suppressClick = false; e.stopPropagation(); return; }
+    const lk = e.target.closest('.lk[data-href]');
+    if (lk) {
+      const row = lk.closest('.row');
+      if (row.classList.contains('open-l') || row.classList.contains('open-r')) { setRow(row, null); return; }
+      const href = safeHref(lk.dataset.href);
+      if (href) window.open(href, '_blank', 'noopener');
+      return;
+    }
     const act = e.target.closest('.act');
     if (act) {
       const id = act.closest('.row').dataset.id;
