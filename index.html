@@ -194,6 +194,11 @@
   .ed > div[data-b="hr"] { padding: 10px 0; min-height: 0; }
   .ed > div[data-b="hr"]::before { content: ""; display: block; border-top: 1px solid var(--sep); }
   .ed b, .ed strong { font-weight: 700; }
+  .tlinks { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; margin: 0 0 12px; }
+  .tlinks a {
+    max-width: 100%; padding: 7px 12px; border-radius: 10px; background: var(--field); color: var(--accent);
+    font-size: 15px; text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
   .ed a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; word-break: break-all; }
 
   /* 슬래시 메뉴 */
@@ -291,6 +296,7 @@
         <div class="stamp" id="stamp"></div>
         <button class="icon-btn" id="iconBtn" aria-label="아이콘 선택"></button>
         <textarea class="title" id="title" rows="1" placeholder="제목" autocomplete="off" enterkeyhint="next"></textarea>
+        <div class="tlinks" id="tlinks" hidden></div>
         <div class="ed" id="ed" contenteditable="true" spellcheck="false" role="textbox" aria-multiline="true" aria-label="본문"></div>
       </div>
     </div>
@@ -307,7 +313,7 @@
   const el = {
     app: $('app'), list: $('list'), search: $('search'), count: $('count'), chips: $('chips'),
     bigTitle: $('bigTitle'), more: $('moreBtn'), pin: $('pinBtn'), iconBtn: $('iconBtn'),
-    title: $('title'), ed: $('ed'), stamp: $('stamp'), slash: $('slash'),
+    title: $('title'), tlinks: $('tlinks'), ed: $('ed'), stamp: $('stamp'), slash: $('slash'),
     editor: $('editor'), empty: $('emptyState'), bar: document.querySelector('.bar'),
   };
   const ed = el.ed;
@@ -555,6 +561,7 @@
     if (!n) { el.app.classList.remove('editing'); loadedId = null; hideSlash(); return; }
     if (el.title.value !== n.title) el.title.value = n.title;
     fitTitle();
+    renderTitleLinks();
     if (force || loadedId !== n.id) {
       ed.innerHTML = sanitize(n.html != null ? n.html : fromPlain(n.body));
       loadedId = n.id;
@@ -685,10 +692,10 @@
     const t = blk.dataset.b;
     const want = t === 'hr' || t === 'code' ? [] : urlsIn(blk.textContent);
     const links = [...blk.querySelectorAll('a')];
-    if (want.join('\n') === links.map(a => a.textContent).join('\n')) return;
+    if (want.join('\n') === links.map(a => a.textContent).join('\n')) return false;
     links.forEach(a => a.replaceWith(...a.childNodes));
     blk.normalize();
-    if (!want.length) return;
+    if (!want.length) return true;
     const walker = document.createTreeWalker(blk, NodeFilter.SHOW_TEXT);
     const texts = [];
     while (walker.nextNode()) texts.push(walker.currentNode);
@@ -710,13 +717,51 @@
       frag.append(s.slice(last));
       node.replaceWith(frag);
     }
+    return true;
   }
 
-  // skip: 지금 입력 중인 블록 (커서가 튀지 않게 건드리지 않음)
-  function linkAll(skip) {
+  // 블록 안에서 커서가 몇 번째 글자 뒤에 있는지 (없으면 -1)
+  function caretOffset(blk) {
+    const s = getSelection();
+    if (!s.rangeCount || !s.isCollapsed || !blk.contains(s.anchorNode)) return -1;
+    const r = document.createRange();
+    r.selectNodeContents(blk);
+    r.setEnd(s.anchorNode, s.anchorOffset);
+    return r.toString().length;
+  }
+
+  function setCaretOffset(blk, off) {
+    const walker = document.createTreeWalker(blk, NodeFilter.SHOW_TEXT);
+    let acc = 0;
+    while (walker.nextNode()) {
+      const len = walker.currentNode.nodeValue.length;
+      if (off <= acc + len) { getSelection().collapse(walker.currentNode, off - acc); return; }
+      acc += len;
+    }
+    placeCaret(blk, true);
+  }
+
+  // cur: 지금 입력 중인 블록. 붙여넣자마자 링크가 되도록 여기도 바꾸되 커서 위치는 그대로 둔다.
+  let composing = false;
+  function linkAll(cur) {
     const s = getSelection();
     if (s.rangeCount && !s.isCollapsed && ed.contains(s.anchorNode)) return;
-    for (const c of ed.children) if (c !== skip) linkify(c);
+    for (const c of ed.children) {
+      if (c !== cur) { linkify(c); continue; }
+      if (composing) continue;          // 한글 조합 중에는 건드리지 않음
+      const off = caretOffset(c);
+      if (linkify(c) && off >= 0) setCaretOffset(c, off);
+    }
+  }
+  ed.addEventListener('compositionstart', () => { composing = true; });
+  ed.addEventListener('compositionend', () => { composing = false; refreshState(); });
+
+  // 제목에 적은 주소는 제목 아래에 누를 수 있는 링크로 보여 준다
+  function renderTitleLinks() {
+    const urls = urlsIn(el.title.value).map(u => [u, toHref(u)]).filter(x => x[1]);
+    el.tlinks.hidden = !urls.length;
+    el.tlinks.innerHTML = urls.map(([u, href]) =>
+      `<a href="${esc(href)}" target="_blank" rel="noopener">🔗 ${esc(u.replace(/^https?:\/\//i, ''))}</a>`).join('');
   }
 
   function linkAt(target) {
@@ -1155,6 +1200,7 @@
   el.title.addEventListener('input', () => {
     if (el.title.value.includes('\n')) el.title.value = el.title.value.replace(/\s*\n\s*/g, ' ');
     fitTitle();
+    renderTitleLinks();
     onEdit();
   });
   window.addEventListener('resize', fitTitle);
