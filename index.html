@@ -670,7 +670,7 @@
   // 첨부 파일만 있는 메모의 미리보기 글
   const attLabel = n => {
     const c = ((n.html || '').match(/data-b="att"/g) || []).length;
-    return c ? '첨부 파일 ' + c + '개' : '추가 텍스트 없음';
+    return c ? '첨부 파일 ' + c + '개' : '';
   };
   const linkCache = new Map();
   function noteLinks(n) {
@@ -691,11 +691,19 @@
     return links;
   }
 
-  function snippet(n, q) {
+  // 목록용 줄 모음: 주소는 빼고 글자만 남긴 줄들 (검색 중에는 주소도 유지)
+  function bodyLines(n, q) {
     const named = q ? null : new Set(noteLinks(n).filter(l => l.named).map(l => l.label));
-    const lines = n.body.split('\n')
+    return n.body.split('\n')
       .map(l => (q ? l : l.replace(URL_RE, ' ').replace(/\s{2,}/g, ' ')).trim())
       .filter(l => l && !(named && named.has(l)));
+  }
+  // 제목을 안 썼으면 본문 첫 줄을 제목으로 보여 준다 (본문도 없으면 빈칸)
+  const listTitle = n => n.title.trim() || bodyLines(n, '')[0] || '';
+
+  function snippet(n, q) {
+    const lines = bodyLines(n, q);
+    if (!q && !n.title.trim()) lines.shift();      // 첫 줄은 제목으로 쓰였으니 미리보기에서 뺀다
     const cut = (l, key) => {
       const i = key ? l.toLowerCase().indexOf(key) : -1;
       const start = i > 20 ? i - 15 : 0;
@@ -744,14 +752,14 @@
 
   function rowHtml(n, q) {
     const showFolder = view === 'all' && n.folder && folderName(n.folder);
-    const title = n.title ? highlight(n.title, q) : '새로운 메모';
+    const head = (n.icon ? esc(n.icon) + ' ' : '') + highlight(listTitle(n), q);
     const links = noteLinks(n);
     return `<div class="row" data-id="${n.id}">
       <button class="act pin" data-act="pin">${ICON.pin}<span>${n.pinned ? '고정 해제' : '고정'}</span></button>
       <button class="act move" data-act="move"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 7.5a2 2 0 0 1 2-2h3.6l2 2h7.4a2 2 0 0 1 2 2V16a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/></svg><span>폴더</span></button>
       <button class="act del" data-act="del">${ICON.trash}<span>삭제</span></button>
       <button class="item${n.id === currentId ? ' active' : ''}" data-id="${n.id}"><div class="in">
-        <div class="t">${n.icon ? esc(n.icon) + ' ' : ''}${title}</div>
+        ${head ? `<div class="t">${head}</div>` : ''}
         <div class="p"><b>${rowDate(n.updated)}</b>${highlight(snippet(n, q) || (links.length ? '' : attLabel(n)), q)}</div>
         ${links.length ? `<div class="lks">${links.slice(0, 3).map(l => `<span class="lk" data-href="${esc(l.href)}"><span>${esc(l.label)}</span></span>`).join('')}${links.length > 3 ? `<span class="lk more">+${links.length - 3}</span>` : ''}</div>` : ''}
         ${showFolder ? `<div class="f">${ICON.folder}${esc(folderName(n.folder))}</div>` : ''}
@@ -875,7 +883,8 @@
   function askDelete(id) {
     const n = notes.find(x => x.id === id);
     if (!n) return;
-    sheet(`"${n.title || '새로운 메모'}" 메모를 삭제할까요?`, [
+    const label = listTitle(n);
+    sheet(label ? `"${label}" 메모를 삭제할까요?` : '이 메모를 삭제할까요?', [
       { label: '삭제', danger: true, run: () => deleteNote(id) },
     ], () => renderList());
   }
@@ -1903,7 +1912,8 @@
   function moveSheet(id) {
     const n = id ? notes.find(x => x.id === id) : current();
     if (!n) return;
-    sheet(`"${n.title || '새로운 메모'}" 폴더로 이동`, [
+    const label = listTitle(n);
+    sheet(label ? `"${label}" 폴더로 이동` : '폴더로 이동', [
       { label: '폴더 없음', checked: !n.folder, run: () => moveTo(n, null) },
       ...folders.map(f => ({ label: f.name, checked: n.folder === f.id, run: () => moveTo(n, f.id) })),
       { label: '＋ 새 폴더…', run: () => { const f = addFolder(); if (f) moveTo(n, f.id); } },

@@ -1,4 +1,4 @@
-const CACHE = 'memo-app-v19';
+const CACHE = 'memo-app-v20';
 const ASSETS = [
   './',
   './index.html',
