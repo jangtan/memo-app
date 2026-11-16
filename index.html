@@ -416,6 +416,74 @@
   .sz i { display: block; border-radius: 50%; background: currentColor; }
   .sz.on { background: var(--text); color: var(--bg); }
 
+  /* ---------- 추가 기능 ---------- */
+  .title-row .big-title { flex: 1; min-width: 0; }
+  .title-row .more + .more { margin-left: 8px; }
+  .chip.tag { background: transparent; box-shadow: inset 0 0 0 1px var(--sep); color: var(--muted); }
+  .chip.tag.on { background: var(--accent); color: var(--on-accent); box-shadow: none; }
+  .item .f span { display: inline-flex; align-items: center; gap: 4px; margin-right: 10px; }
+  .item .f .rm { color: var(--accent); }
+
+  /* 여러 메모 선택 */
+  .item.sel { padding-left: 50px; }
+  .item .pick { position: absolute; left: 16px; top: 50%; width: 22px; height: 22px; margin-top: -11px; border-radius: 50%; border: 1.6px solid var(--muted); }
+  .item .pick.on { background: var(--accent) var(--check) center/100% no-repeat; border-color: var(--accent); }
+  .selbar {
+    display: grid; grid-template-columns: auto 1fr auto auto; align-items: center; gap: 4px;
+    padding: 10px 14px calc(10px + env(safe-area-inset-bottom)); border-top: .5px solid var(--sep); background: var(--bg);
+  }
+  .selbar button { height: 40px; padding: 0 14px; border-radius: 999px; font-size: 15px; font-weight: 600; color: var(--accent); }
+  .selbar button.danger { color: var(--danger); }
+  .selbar button:disabled { opacity: .35; }
+  .selbar .selcnt { text-align: center; font-size: 13px; color: var(--muted); }
+
+  /* 메모에서 찾기 */
+  .findbar { display: flex; align-items: center; gap: 4px; margin: 2px 14px 6px; padding: 5px 6px 5px 14px; border-radius: 14px; background: var(--field); }
+  .findbar input { flex: 1; min-width: 0; height: 34px; border: none; outline: none; background: transparent; color: var(--text); font: inherit; font-size: 16px; -webkit-appearance: none; appearance: none; }
+  .findbar span { min-width: 36px; text-align: right; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .findbar button { width: 34px; height: 34px; border-radius: 9px; font-size: 12px; color: var(--text); }
+  .findbar button.fdone { width: auto; padding: 0 10px; font-size: 15px; font-weight: 600; color: var(--accent); }
+  ::highlight(find) { background-color: rgba(255, 204, 0, .45); }
+  ::highlight(find-cur) { background-color: #ff9f0a; color: #000; }
+
+  /* 서식 메뉴 */
+  .pop { max-height: calc(100vh - 120px); max-height: calc(100dvh - 120px); overflow-y: auto; }
+  .pop .fmt-row { display: flex; gap: 6px; padding: 6px 16px 4px; }
+  .pop .fmt-row button { flex: 1; height: 46px; padding: 0; gap: 0; justify-content: center; border-radius: 12px; background: var(--field); font-size: 18px; }
+  .pop .fi { width: 26px; text-align: center; font-size: 14px; font-weight: 700; color: var(--muted); }
+  .pop button.cur { color: var(--accent); }
+  .pop button.cur .fi { color: var(--accent); }
+
+  /* 받아쓰기 표시 */
+  .dict-pill {
+    position: fixed; left: 16px; right: 16px; top: calc(64px + env(safe-area-inset-top)); z-index: 60; width: fit-content; margin: 0 auto;
+    display: flex; align-items: center; gap: 9px; padding: 11px 18px; border-radius: 999px;
+    background: var(--text); color: var(--bg); font-size: 14.5px; font-weight: 600; box-shadow: 0 8px 24px rgba(0, 0, 0, .25);
+  }
+  .dict-pill i { width: 10px; height: 10px; border-radius: 50%; background: var(--danger); animation: pulse 1s ease-in-out infinite; }
+
+  .dlg-desc { margin: -6px 0 14px; font-size: 13.5px; line-height: 1.5; color: var(--muted); }
+
+  /* 글자 크기 */
+  html[data-font="s"] .ed { font-size: 15px; }
+  html[data-font="s"] .title { font-size: 26px; }
+  html[data-font="l"] .ed { font-size: 20px; }
+  html[data-font="l"] .title { font-size: 34px; }
+  html[data-font="l"] .item .t { font-size: 18.5px; }
+  html[data-font="l"] .item .p { font-size: 16px; }
+
+  /* 인쇄 / PDF: 열려 있는 메모만 */
+  @media print {
+    html, body { height: auto; background: #fff; color: #000; }
+    .side, .bar, .etool, .findbar, .toast, .lp-menu, .slash, .pop, .sheet-bg, .dict-pill, .att-x, .tlinks, .icon-btn.ghost, .empty-state { display: none !important; }
+    .app { display: block; height: auto; }
+    .main { display: block !important; width: 100%; position: static; background: #fff; }
+    .editor { overflow: visible; }
+    .page { max-width: none; padding: 0; }
+    .stamp { text-align: left; }
+    .ed { min-height: 0; padding-bottom: 0; }
+  }
+
   /* 마우스가 있는 기기에서만 hover 표시 */
   @media (hover: hover) {
     .item:hover:not(.active) { background: var(--hover); }
@@ -626,6 +694,7 @@
         folders = Array.isArray(data.folders) ? data.folders : [];
         currentId = data.currentId;
         view = data.view && folders.some(f => f.id === data.view) ? data.view : 'all';
+        afterLoad();
         return;
       }
     } catch (e) {}
@@ -651,7 +720,7 @@
   }
 
   function persist() {
-    try { localStorage.setItem(KEY, JSON.stringify({ notes, folders, view, currentId })); } catch (e) {}
+    try { localStorage.setItem(KEY, JSON.stringify({ notes: notes.map(storable), folders, view: view === 'trash' ? 'all' : view, currentId })); } catch (e) {}
   }
 
   function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
@@ -741,37 +810,44 @@
     return `${t} · ${chars}자`;
   }
 
-  const viewNotes = () => notes.filter(n => view === 'all' || n.folder === view);
+  const viewNotes = () => notes.filter(n => view === 'trash' ? !!n.deletedAt
+    : !n.deletedAt && (view === 'all' || n.folder === view) && (!tag || noteTags(n).includes(tag)));
 
   function filtered() {
     const q = query.trim().toLowerCase();
     return viewNotes()
       .filter(n => !q || n.title.toLowerCase().includes(q) || n.body.toLowerCase().includes(q))
-      .sort((a, b) => b.updated - a.updated);
+      .sort(sorter());
   }
 
   function rowHtml(n, q) {
     const showFolder = view === 'all' && n.folder && folderName(n.folder);
-    const head = (n.icon ? esc(n.icon) + ' ' : '') + highlight(listTitle(n), q);
+    const head = (n.locked ? '🔒 ' : '') + (n.icon ? esc(n.icon) + ' ' : '') + highlight(listTitle(n), q);
     const links = noteLinks(n);
     return `<div class="row" data-id="${n.id}">
-      <button class="act pin" data-act="pin">${ICON.pin}<span>${n.pinned ? '고정 해제' : '고정'}</span></button>
+      ${n.deletedAt ? `<button class="act pin" data-act="restore">${ICON.restore}<span>복구</span></button>` : `<button class="act pin" data-act="pin">${ICON.pin}<span>${n.pinned ? '고정 해제' : '고정'}</span></button>`}
       <button class="act move" data-act="move"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 7.5a2 2 0 0 1 2-2h3.6l2 2h7.4a2 2 0 0 1 2 2V16a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/></svg><span>폴더</span></button>
       <button class="act del" data-act="del">${ICON.trash}<span>삭제</span></button>
-      <button class="item${n.id === currentId ? ' active' : ''}" data-id="${n.id}"><div class="in">
+      <button class="item${n.id === currentId ? ' active' : ''}${selecting ? ' sel' : ''}" data-id="${n.id}">${selecting ? `<span class="pick${picked.has(n.id) ? ' on' : ''}"></span>` : ''}<div class="in">
         ${head ? `<div class="t">${head}</div>` : ''}
-        <div class="p"><b>${rowDate(n.updated)}</b>${highlight(snippet(n, q) || (links.length ? '' : attLabel(n)), q)}</div>
+        <div class="p"><b>${rowDate(n.updated)}</b>${n.locked && !n._open ? '잠긴 메모' : highlight(snippet(n, q) || (links.length ? '' : attLabel(n)), q)}</div>
         ${links.length ? `<div class="lks">${links.slice(0, 3).map(l => `<span class="lk" data-href="${esc(l.href)}"><span>${esc(l.label)}</span></span>`).join('')}${links.length > 3 ? `<span class="lk more">+${links.length - 3}</span>` : ''}</div>` : ''}
-        ${showFolder ? `<div class="f">${ICON.folder}${esc(folderName(n.folder))}</div>` : ''}
+        ${metaLine(n, showFolder)}
       </div></button>
     </div>`;
   }
 
   function renderChips() {
+    const trashN = notes.filter(n => n.deletedAt).length;
+    if (view === 'trash' && !trashN) view = 'all';
+    const tags = view === 'trash' ? [] : allTags();
+    if (tag && !tags.includes(tag)) tag = '';
     const chip = (id, name) => `<button class="chip${view === id ? ' on' : ''}" data-folder="${id}">${esc(name)}</button>`;
     el.chips.innerHTML = chip('all', '모든 메모') + folders.map(f => chip(f.id, f.name)).join('')
-      + '<button class="chip add" data-add="1">＋ 새 폴더</button>';
-    el.bigTitle.textContent = view === 'all' ? '메모' : folderName(view);
+      + (trashN ? chip('trash', '최근 삭제 ' + trashN) : '')
+      + '<button class="chip add" data-add="1">＋ 새 폴더</button>'
+      + tags.map(t => `<button class="chip tag${tag === t ? ' on' : ''}" data-tag="${esc(t)}">#${esc(t)}</button>`).join('');
+    el.bigTitle.textContent = view === 'trash' ? '최근 삭제' : tag ? '#' + tag : view === 'all' ? '메모' : folderName(view);
     el.more.hidden = view === 'all';
   }
 
@@ -781,7 +857,7 @@
     el.count.textContent = viewNotes().length + '개의 메모';
     openRow = null;
     if (!items.length) {
-      el.list.innerHTML = `<div class="none">${q ? '검색 결과 없음' : '메모 없음'}</div>`;
+      el.list.innerHTML = `<div class="none">${q ? '검색 결과 없음' : view === 'trash' ? '최근 삭제된 메모 없음' : '메모 없음'}</div>`;
       return;
     }
     const card = arr => `<div class="card">${arr.map(n => rowHtml(n, q)).join('')}</div>`;
@@ -793,11 +869,11 @@
       if (pinned.length) html += `<div class="group-title">${ICON.pinSmall}고정됨</div>${card(pinned)}`;
       const groups = [];
       for (const n of items.filter(n => !n.pinned)) {
-        const g = groupName(n.updated);
+        const g = cfg.sort === 'title' ? '' : groupName(cfg.sort === 'created' ? n.created || n.updated : n.updated);
         const last = groups[groups.length - 1];
         if (last && last.name === g) last.items.push(n); else groups.push({ name: g, items: [n] });
       }
-      html += groups.map(g => `<div class="group-title">${g.name}</div>${card(g.items)}`).join('');
+      html += groups.map(g => (g.name ? `<div class="group-title">${g.name}</div>` : pinned.length ? '<div class="group-title">메모</div>' : '') + card(g.items)).join('');
     }
     el.list.innerHTML = html;
   }
@@ -821,6 +897,7 @@
       loadedId = n.id;
       lastBlock = null;
       hideSlash();
+      closeFind();
       refreshState();
       ed.querySelectorAll('[data-b="att"]').forEach(hydrate);
     }
@@ -838,6 +915,9 @@
   const renderAll = () => { renderChips(); renderList(); renderEditor(); };
 
   function select(id, openEditor = true) {
+    const sel = notes.find(x => x.id === id);
+    if (sel && sel.deletedAt) { trashSheet(sel); return; }                       // 삭제된 메모는 복구부터
+    if (sel && sel.locked && !sel._open) { unlockNote(sel, () => select(id, openEditor)); return; }
     currentId = id;
     persist();
     renderList();
@@ -847,7 +927,8 @@
 
   function createNote() {
     const now = Date.now();
-    const n = { id: uid(), title: '', body: '', html: '', icon: '', created: now, updated: now, pinned: false, folder: view === 'all' ? null : view };
+    const n = { id: uid(), title: '', body: '', html: '', icon: '', created: now, updated: now, pinned: false, folder: view === 'all' || view === 'trash' ? null : view };
+    if (view === 'trash' || tag) { if (view === 'trash') view = 'all'; tag = ''; renderChips(); }
     notes.unshift(n);
     query = ''; el.search.value = '';
     select(n.id);
@@ -863,13 +944,14 @@
     renderEditor();
   }
 
+  // 처음 지우면 '최근 삭제'로 옮기고, 거기서 다시 지우면 완전히 없앤다
   function deleteNote(id) {
     const n = notes.find(x => x.id === id);
     if (!n) return;
     const list = filtered();
     const idx = list.findIndex(x => x.id === id);
-    notes = notes.filter(x => x.id !== id);
-    attIds(n.html).forEach(delBlob);
+    if (n.deletedAt) { notes = notes.filter(x => x.id !== id); noteAttIds(n).forEach(delBlob); }
+    else { n.deletedAt = Date.now(); n.reminded = true; }
     if (id === currentId) {
       const rest = filtered();
       const next = rest[Math.min(Math.max(idx, 0), rest.length - 1)];
@@ -883,23 +965,26 @@
   function askDelete(id) {
     const n = notes.find(x => x.id === id);
     if (!n) return;
-    const label = listTitle(n);
-    sheet(label ? `"${label}" 메모를 삭제할까요?` : '이 메모를 삭제할까요?', [
-      { label: '삭제', danger: true, run: () => deleteNote(id) },
+    const label = listTitle(n), name = label ? `"${label}" ` : '이 ';
+    sheet(n.deletedAt ? `${name}메모를 영구 삭제할까요? 되돌릴 수 없습니다.` : `${name}메모를 삭제할까요? 최근 삭제에서 30일 동안 복구할 수 있습니다.`, [
+      { label: n.deletedAt ? '영구 삭제' : '삭제', danger: true, run: () => deleteNote(id) },
     ], () => renderList());
   }
 
   // 제목·본문 변경 저장
   function onEdit() {
     const n = current();
-    if (!n) return;
+    if (!n || (n.locked && !n._open)) return;
     n.title = el.title.value;
     n.html = sanitize(ed.innerHTML);
     n.body = plainText();
     n.updated = Date.now();
     el.stamp.textContent = stampText(n);
     clearTimeout(saveTimer);
-    saveTimer = setTimeout(() => { persist(); renderList(); }, 250);
+    saveTimer = setTimeout(async () => {
+      if (n.locked) { try { await seal(n); } catch (e) {} }     // 잠긴 메모는 암호문을 새로 만든 뒤 저장
+      persist(); renderChips(); renderList();
+    }, 250);
   }
 
   // ---------- 블록 에디터 ----------
@@ -1404,7 +1489,7 @@
     try {
       const keys = await idb('readonly', s => s.getAllKeys());
       if (!keys || !keys.length) return;
-      const used = new Set(notes.flatMap(n => attIds(n.html)));
+      const used = new Set(notes.flatMap(noteAttIds));
       for (const k of keys) if (!used.has(k)) await delBlob(k);
     } catch (e) {}
   }
@@ -1560,7 +1645,9 @@
     pop.innerHTML = `<button type="button" data-a="media">${AI.photo}<span>사진 또는 비디오 선택</span></button>
       <div class="pop-sep"></div>
       <button type="button" data-a="audio">${AI.wave}<span>오디오 녹음</span></button>
-      <button type="button" data-a="file">${AI.doc}<span>파일 첨부</span></button>`;
+      <button type="button" data-a="file">${AI.doc}<span>파일 첨부</span></button>
+      <div class="pop-sep"></div>
+      <button type="button" data-a="dict"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg><span>받아쓰기</span></button>`;
     document.body.appendChild(pop);
     pop.style.left = Math.max(12, Math.min(r.left - 8, innerWidth - pop.offsetWidth - 12)) + 'px';
     pop.style.bottom = (innerHeight - r.top + 12) + 'px';
@@ -1570,6 +1657,7 @@
       closePop();
       if (b.dataset.a === 'media') pickAndAttach('image/*,video/*');
       else if (b.dataset.a === 'file') pickAndAttach('');
+      else if (b.dataset.a === 'dict') startDictation();
       else recordAudio();
     });
     popEl = pop;
@@ -1727,8 +1815,12 @@
     sheet('', [
       { label: n.pinned ? '고정 해제' : '고정', run: () => togglePin(n.id) },
       { label: '폴더로 이동', run: () => moveSheet() },
+      { label: '메모에서 찾기', run: openFind },
       { label: '링크 추가', run: () => { savedRange = rng; openLinkDialog(null); } },
-      { label: '블록 서식', run: () => typeSheet() },
+      { label: n.remind && !n.reminded ? '알림 변경' : '알림 설정', run: () => remindDialog(n) },
+      { label: n.locked ? '잠금 해제' : '메모 잠그기', run: () => lockToggle(n) },
+      { label: '복제', run: () => duplicateNote(n) },
+      { label: '인쇄 / PDF로 저장', run: printNote },
       { label: '삭제', danger: true, run: () => askDelete(n.id) },
     ]);
   }
@@ -1747,6 +1839,650 @@
     vv.addEventListener('scroll', sync);
     sync();
   }
+
+  // =====================================================================
+  // 추가 기능: 설정·정렬·글자 크기, 백업, 최근 삭제, 태그, 여러 메모 선택,
+  // 복제, 메모 안 찾기, 서식, 받아쓰기, 인쇄, 잠금(암호화), 알림
+  // =====================================================================
+  const CFG_KEY = 'memo-app-cfg';
+  let cfg = (() => { try { return JSON.parse(localStorage.getItem(CFG_KEY) || '{}') || {}; } catch (e) { return {}; } })();
+  if (!['updated', 'created', 'title'].includes(cfg.sort)) cfg.sort = 'updated';
+  if (!['s', 'm', 'l'].includes(cfg.font)) cfg.font = 'm';
+  const saveCfg = () => { try { localStorage.setItem(CFG_KEY, JSON.stringify(cfg)); } catch (e) {} };
+  const applyFont = () => { document.documentElement.dataset.font = cfg.font; };
+  applyFont();
+
+  let tag = '';                 // 선택한 태그 (없으면 '')
+  let selecting = false;        // 여러 메모 선택 중
+  const picked = new Set();
+
+  ICON.restore = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 2.4-5.7L4 8.5"/><path d="M4 4v4.5h4.5"/></svg>';
+
+  // ---------- 정렬 ----------
+  const SORTS = { updated: '수정한 날짜', created: '만든 날짜', title: '제목' };
+  const FONTS = { s: '작게', m: '보통', l: '크게' };
+  function sorter() {
+    if (cfg.sort === 'created') return (a, b) => (b.created || 0) - (a.created || 0);
+    if (cfg.sort === 'title') return (a, b) => listTitle(a).localeCompare(listTitle(b), 'ko') || b.updated - a.updated;
+    return (a, b) => b.updated - a.updated;
+  }
+
+  // ---------- 태그 (#여행 처럼 본문에 적은 꼬리표) ----------
+  const TAG_RE = /(^|\s)#([^\s#.,!?()\[\]{}"'<>]{1,30})/gu;
+  function noteTags(n) {
+    const out = new Set();
+    for (const m of ((n.title || '') + '\n' + (n.body || '')).matchAll(TAG_RE)) if (!/^\d+$/.test(m[2])) out.add(m[2]);
+    return [...out];
+  }
+  function allTags() {
+    const c = new Map();
+    notes.forEach(n => { if (!n.deletedAt) noteTags(n).forEach(t => c.set(t, (c.get(t) || 0) + 1)); });
+    return [...c.keys()].sort((a, b) => c.get(b) - c.get(a) || a.localeCompare(b, 'ko'));
+  }
+
+  // ---------- 목록 보조 ----------
+  const fmtRemind = ts => new Date(ts).toLocaleString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short', hour: 'numeric', minute: '2-digit' });
+  function metaLine(n, showFolder) {
+    const parts = [];
+    if (showFolder) parts.push(`<span>${ICON.folder}${esc(folderName(n.folder))}</span>`);
+    if (n.remind && !n.reminded && !n.deletedAt) parts.push(`<span class="rm">🔔 ${esc(fmtRemind(n.remind))}</span>`);
+    if (n.deletedAt) parts.push(`<span>${Math.max(1, 30 - Math.floor((Date.now() - n.deletedAt) / 864e5))}일 후 영구 삭제</span>`);
+    return parts.length ? `<div class="f">${parts.join('')}</div>` : '';
+  }
+
+  // 저장할 때: 잠긴 메모는 내용 대신 암호문만 남긴다
+  function storable(n) {
+    const o = { ...n };
+    delete o._open;
+    if (o.locked) { o.html = ''; o.body = ''; o.atts = n.atts || []; }
+    return o;
+  }
+  const noteAttIds = n => n.locked ? (n.atts || []) : attIds(n.html);
+
+  // 불러온 직후: 30일 지난 삭제 메모 정리, 잠긴 메모는 닫힌 상태로
+  function afterLoad() {
+    const limit = Date.now() - 30 * 864e5;
+    const old = notes.filter(n => n.deletedAt && n.deletedAt < limit);
+    if (old.length) { old.forEach(n => noteAttIds(n).forEach(delBlob)); notes = notes.filter(n => !old.includes(n)); }
+    notes.forEach(n => {
+      if (typeof n.title !== 'string') n.title = '';
+      if (typeof n.body !== 'string') n.body = '';
+      if (n.locked) { n.html = ''; n.body = ''; n._open = false; }
+    });
+    const c = notes.find(n => n.id === currentId);
+    if (c && (c.deletedAt || c.locked)) currentId = null;
+  }
+
+  // ---------- 최근 삭제 ----------
+  function restoreNote(id) {
+    const n = notes.find(x => x.id === id);
+    if (!n) return;
+    delete n.deletedAt;
+    persist(); renderAll();
+    toast('메모를 복구했습니다');
+  }
+  function trashSheet(n) {
+    const label = listTitle(n);
+    sheet(label ? `"${label}" · 최근 삭제됨` : '최근 삭제된 메모', [
+      { label: '복구', run: () => restoreNote(n.id) },
+      { label: '영구 삭제', danger: true, run: () => askDelete(n.id) },
+    ]);
+  }
+  function trashAllSheet() {
+    const del = notes.filter(n => n.deletedAt);
+    if (!del.length) return;
+    sheet('최근 삭제', [
+      { label: `모두 복구 (${del.length}개)`, run: () => { del.forEach(n => delete n.deletedAt); persist(); renderAll(); toast('모두 복구했습니다'); } },
+      { label: '모두 영구 삭제', danger: true, run: () => sheet('되돌릴 수 없습니다. 모두 영구 삭제할까요?', [
+        { label: '모두 영구 삭제', danger: true, run: () => {
+          del.forEach(n => noteAttIds(n).forEach(delBlob));
+          notes = notes.filter(n => !n.deletedAt);
+          persist(); renderAll();
+        } },
+      ]) },
+    ]);
+  }
+
+  // ---------- 설정 ----------
+  const setBtn = document.createElement('button');
+  setBtn.className = 'more'; setBtn.id = 'setBtn'; setBtn.type = 'button'; setBtn.setAttribute('aria-label', '설정');
+  setBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2.2"/><circle cx="9" cy="17" r="2.2"/></svg>';
+  el.more.after(setBtn);
+
+  function settingsMenu() {
+    const days = cfg.lastBackup ? Math.floor((Date.now() - cfg.lastBackup) / 864e5) : null;
+    sheet(days == null ? '설정 · 아직 백업한 적이 없어요' : `설정 · 마지막 백업 ${days ? days + '일 전' : '오늘'}`, [
+      { label: '여러 메모 선택', run: startSelect },
+      { label: `정렬: ${SORTS[cfg.sort]} 순`, run: sortSheet },
+      { label: `글자 크기: ${FONTS[cfg.font]}`, run: fontSheet },
+      { label: '백업 파일로 내보내기', run: exportBackup },
+      { label: '백업 파일에서 가져오기', run: importBackup },
+    ]);
+  }
+  function sortSheet() {
+    sheet('정렬', Object.entries(SORTS).map(([k, v]) => ({ label: v + ' 순', checked: cfg.sort === k, run: () => { cfg.sort = k; saveCfg(); renderList(); } })));
+  }
+  function fontSheet() {
+    sheet('글자 크기', Object.entries(FONTS).map(([k, v]) => ({ label: v, checked: cfg.font === k, run: () => { cfg.font = k; saveCfg(); applyFont(); fitTitle(); } })));
+  }
+  setBtn.addEventListener('click', settingsMenu);
+
+  // ---------- 백업·복원 ----------
+  const blobToDataUrl = b => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => rej(r.error); r.readAsDataURL(b); });
+
+  async function exportBackup() {
+    toast('백업 파일을 만드는 중…');
+    const files = [];
+    for (const id of new Set(notes.flatMap(noteAttIds))) {
+      try {
+        const rec = await getBlob(id);
+        if (rec && rec.blob) files.push({ id, name: rec.name || '', type: rec.blob.type, data: await blobToDataUrl(rec.blob) });
+      } catch (e) {}
+    }
+    const data = { app: 'memo-app', version: 1, exportedAt: Date.now(), notes: notes.map(storable), folders, lock: cfg.lock || null, files };
+    const d = new Date(), p2 = x => String(x).padStart(2, '0');
+    const name = `메모백업-${d.getFullYear()}${p2(d.getMonth() + 1)}${p2(d.getDate())}.json`;
+    const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+    cfg.lastBackup = Date.now(); saveCfg();
+    try {
+      const file = new File([blob], name, { type: 'application/json' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: name });
+        toast('백업 파일을 저장했습니다');
+        return;
+      }
+    } catch (e) { if (e.name === 'AbortError') return; }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+    toast(`백업 파일을 내려받았습니다 (${name})`);
+  }
+
+  function importBackup() {
+    const i = document.createElement('input');
+    i.type = 'file'; i.accept = 'application/json,.json'; i.style.display = 'none';
+    i.addEventListener('change', async () => {
+      const f = i.files[0];
+      i.remove();
+      if (!f) return;
+      let data;
+      try { data = JSON.parse(await f.text()); } catch (e) { toast('백업 파일을 읽을 수 없습니다'); return; }
+      if (!data || data.app !== 'memo-app' || !Array.isArray(data.notes)) { toast('메모 백업 파일이 아닙니다'); return; }
+      sheet(`백업 파일의 메모 ${data.notes.length}개를 가져올까요? 같은 메모는 더 최근에 고친 것으로 바뀝니다.`, [
+        { label: '가져오기', run: () => restoreBackup(data) },
+      ]);
+    });
+    i.addEventListener('cancel', () => i.remove());
+    document.body.appendChild(i);
+    i.click();
+  }
+
+  async function restoreBackup(data) {
+    let added = 0, changed = 0;
+    for (const bn of data.notes) {
+      if (!bn || typeof bn.id !== 'string' || !bn.id) continue;
+      const clean = {
+        ...bn, id: bn.id, title: String(bn.title || ''), body: String(bn.body || ''),
+        html: typeof bn.html === 'string' ? bn.html : null,
+        created: +bn.created || Date.now(), updated: +bn.updated || Date.now(),
+      };
+      delete clean._open;
+      if (clean.locked) { if (!clean.enc) continue; clean.html = ''; clean.body = ''; clean._open = false; }
+      const ex = notes.find(n => n.id === clean.id);
+      if (!ex) { notes.push(clean); added++; }
+      else if (clean.updated > (ex.updated || 0)) { Object.keys(ex).forEach(k => delete ex[k]); Object.assign(ex, clean); changed++; }
+    }
+    for (const f of Array.isArray(data.folders) ? data.folders : []) {
+      if (f && f.id && !folders.some(x => x.id === f.id)) folders.push({ id: String(f.id), name: String(f.name || '폴더').slice(0, 30) });
+    }
+    for (const f of Array.isArray(data.files) ? data.files : []) {
+      if (!f || !/^[a-z0-9]{4,40}$/i.test(f.id || '') || !String(f.data || '').startsWith('data:')) continue;
+      try { await putBlob(f.id, await (await fetch(f.data)).blob(), String(f.name || '')); } catch (e) {}
+    }
+    if (!cfg.lock && data.lock && data.lock.s && data.lock.check) { cfg.lock = data.lock; saveCfg(); }
+    loadedId = null;
+    persist(); renderAll();
+    toast(`메모 ${added}개를 가져오고 ${changed}개를 최신으로 바꿨습니다`);
+  }
+
+  // 오래 백업하지 않았으면 일주일에 한 번 알려 줌
+  setTimeout(() => {
+    const live = notes.filter(n => !n.deletedAt).length;
+    const since = Date.now() - (cfg.lastBackup || cfg.firstSeen || Date.now());
+    if (!cfg.firstSeen) { cfg.firstSeen = Date.now(); saveCfg(); }
+    if (live >= 5 && since > 14 * 864e5 && Date.now() - (cfg.backupNag || 0) > 7 * 864e5) {
+      cfg.backupNag = Date.now(); saveCfg();
+      toast('백업한 지 2주가 지났어요. 위쪽 설정에서 백업할 수 있어요');
+    }
+  }, 3000);
+
+  // ---------- 여러 메모 선택 ----------
+  const foot = document.querySelector('.foot');
+  const selBar = document.createElement('div');
+  selBar.className = 'selbar'; selBar.hidden = true;
+  selBar.innerHTML = '<button type="button" data-s="done">완료</button><span class="selcnt"></span><button type="button" data-s="move">이동</button><button type="button" data-s="del" class="danger">삭제</button>';
+  foot.after(selBar);
+
+  function updSel() {
+    selBar.querySelector('.selcnt').textContent = picked.size ? `${picked.size}개 선택됨` : '메모를 고르세요';
+    selBar.querySelector('[data-s="move"]').textContent = view === 'trash' ? '복구' : '이동';
+    selBar.querySelectorAll('[data-s="move"],[data-s="del"]').forEach(b => { b.disabled = !picked.size; });
+  }
+  function startSelect() {
+    selecting = true; picked.clear();
+    foot.hidden = true; selBar.hidden = false;
+    renderList(); updSel();
+  }
+  function endSelect() {
+    selecting = false; picked.clear();
+    foot.hidden = false; selBar.hidden = true;
+    renderList();
+  }
+  function togglePick(id) {
+    if (picked.has(id)) picked.delete(id); else picked.add(id);
+    renderList(); updSel();
+  }
+  selBar.addEventListener('click', e => {
+    const b = e.target.closest('button');
+    if (!b || b.disabled) return;
+    const list = notes.filter(n => picked.has(n.id));
+    if (b.dataset.s === 'done') endSelect();
+    else if (b.dataset.s === 'move') {
+      if (view === 'trash') { list.forEach(n => delete n.deletedAt); persist(); endSelect(); renderAll(); toast(`${list.length}개를 복구했습니다`); return; }
+      const apply = fid => { list.forEach(n => { n.folder = fid; }); persist(); endSelect(); renderAll(); toast(`${list.length}개를 옮겼습니다`); };
+      sheet(`${list.length}개 메모를 이동`, [
+        { label: '폴더 없음', run: () => apply(null) },
+        ...folders.map(f => ({ label: f.name, run: () => apply(f.id) })),
+        { label: '＋ 새 폴더…', run: () => { const f = addFolder(); if (f) apply(f.id); } },
+      ]);
+    } else if (b.dataset.s === 'del') {
+      const hard = view === 'trash';
+      sheet(hard ? `${list.length}개 메모를 영구 삭제할까요? 되돌릴 수 없습니다.` : `${list.length}개 메모를 삭제할까요? 최근 삭제에서 30일 동안 복구할 수 있습니다.`, [
+        { label: hard ? '영구 삭제' : '삭제', danger: true, run: () => {
+          if (hard) { list.forEach(n => noteAttIds(n).forEach(delBlob)); notes = notes.filter(n => !picked.has(n.id)); }
+          else list.forEach(n => { n.deletedAt = Date.now(); n.reminded = true; });
+          if (picked.has(currentId)) { currentId = null; el.app.classList.remove('editing'); }
+          persist(); endSelect(); renderAll();
+        } },
+      ]);
+    }
+  });
+
+  // ---------- 복제 ----------
+  async function duplicateNote(n) {
+    if (n.locked) { toast('잠긴 메모는 복제할 수 없습니다'); return; }
+    let html = n.html || '';
+    for (const id of attIds(html)) {
+      try {
+        const rec = await getBlob(id);
+        if (!rec) continue;
+        const nid = uid();
+        await putBlob(nid, rec.blob, rec.name);
+        html = html.split(`data-id="${id}"`).join(`data-id="${nid}"`);
+      } catch (e) {}
+    }
+    const now = Date.now();
+    const copy = { ...n, id: uid(), title: n.title ? n.title + ' 사본' : '', html, created: now, updated: now, pinned: false, remind: null, reminded: false };
+    delete copy._open; delete copy.deletedAt;
+    notes.unshift(copy);
+    persist();
+    select(copy.id);
+    toast('메모를 복제했습니다');
+  }
+
+  // ---------- 메모에서 찾기 ----------
+  const findBar = document.createElement('div');
+  findBar.className = 'findbar'; findBar.hidden = true;
+  findBar.innerHTML = '<input type="search" placeholder="메모에서 찾기" enterkeyhint="search" autocomplete="off"><span></span><button type="button" data-f="prev" aria-label="이전">▲</button><button type="button" data-f="next" aria-label="다음">▼</button><button type="button" data-f="done" class="fdone">완료</button>';
+  el.bar.after(findBar);
+  const findIn = findBar.querySelector('input'), findCnt = findBar.querySelector('span');
+  const canHL = !!(window.CSS && CSS.highlights && window.Highlight);
+  let find = null;
+
+  function openFind() {
+    findBar.hidden = false;
+    findIn.focus(); findIn.select();
+    runFind();
+  }
+  function closeFind() {
+    findBar.hidden = true;
+    find = null;
+    if (canHL) { CSS.highlights.delete('find'); CSS.highlights.delete('find-cur'); }
+  }
+  function runFind(keep) {
+    if (findBar.hidden) return;
+    const q = findIn.value.trim().toLowerCase(), ranges = [];
+    if (q) {
+      const w = document.createTreeWalker(ed, NodeFilter.SHOW_TEXT);
+      while (w.nextNode()) {
+        const t = w.currentNode, v = t.nodeValue.toLowerCase();
+        for (let i = v.indexOf(q); i >= 0; i = v.indexOf(q, i + q.length)) {
+          const r = document.createRange();
+          r.setStart(t, i); r.setEnd(t, i + q.length);
+          ranges.push(r);
+        }
+      }
+    }
+    find = { ranges, idx: keep && find ? Math.min(find.idx, Math.max(0, ranges.length - 1)) : 0 };
+    paintFind();
+  }
+  function paintFind() {
+    const { ranges, idx } = find;
+    findCnt.textContent = ranges.length ? `${idx + 1}/${ranges.length}` : findIn.value.trim() ? '0/0' : '';
+    if (canHL) {
+      CSS.highlights.set('find', new Highlight(...ranges));
+      if (ranges[idx]) CSS.highlights.set('find-cur', new Highlight(ranges[idx])); else CSS.highlights.delete('find-cur');
+    }
+    const r = ranges[idx];
+    if (r) {
+      const rect = r.getBoundingClientRect(), box = el.editor.getBoundingClientRect();
+      if (rect.top < box.top + 40 || rect.bottom > box.bottom - 120) el.editor.scrollTop += rect.top - box.top - box.height / 3;
+    }
+  }
+  findIn.addEventListener('input', () => runFind());
+  findIn.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); stepFind(e.shiftKey ? -1 : 1); }
+    else if (e.key === 'Escape') closeFind();
+  });
+  function stepFind(d) {
+    if (!find || !find.ranges.length) return;
+    find.idx = (find.idx + d + find.ranges.length) % find.ranges.length;
+    paintFind();
+  }
+  findBar.addEventListener('click', e => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    if (b.dataset.f === 'done') closeFind(); else stepFind(b.dataset.f === 'next' ? 1 : -1);
+  });
+  ed.addEventListener('input', () => runFind(true));
+  document.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === 'f' && current() && !el.editor.hidden
+      && (el.app.classList.contains('editing') || innerWidth > 720)) { e.preventDefault(); openFind(); }
+  });
+
+  // ---------- 서식 버튼 (하단 Aa) ----------
+  const BLOCK_ITEMS = [['h1', 'H1', '제목'], ['h2', 'H2', '부제목'], ['h3', 'H3', '소제목'], ['p', 'T', '본문'],
+    ['ul', '•', '글머리 기호 목록'], ['ol', '1.', '번호 목록'], ['todo', '◯', '체크리스트'], ['quote', '❝', '인용'], ['code', '</>', '코드']];
+  const fmtBtn = document.createElement('button');
+  fmtBtn.type = 'button'; fmtBtn.className = 'tool aa'; fmtBtn.id = 'fmtBtn'; fmtBtn.textContent = 'Aa';
+  fmtBtn.setAttribute('aria-label', '서식');
+  $('checkBtn').before(fmtBtn);
+  fmtBtn.addEventListener('mousedown', e => e.preventDefault());
+
+  function openPopAt(anchor, html, onClick) {
+    if (popEl) { closePop(); return; }
+    if (closeSheet) closeSheet();
+    const r = anchor.getBoundingClientRect();
+    const pop = document.createElement('div');
+    pop.className = 'pop';
+    pop.innerHTML = html;
+    document.body.appendChild(pop);
+    pop.style.left = Math.max(12, Math.min(r.left - 8, innerWidth - pop.offsetWidth - 12)) + 'px';
+    pop.style.bottom = (innerHeight - r.top + 12) + 'px';
+    pop.addEventListener('mousedown', e => e.preventDefault());
+    pop.addEventListener('click', onClick);
+    popEl = pop;
+    setTimeout(() => { document.addEventListener('pointerdown', popOutside, true); document.addEventListener('keydown', popKey); }, 0);
+  }
+
+  fmtBtn.addEventListener('click', () => {
+    const rng = currentRange();
+    const blk0 = lastBlock && ed.contains(lastBlock) ? lastBlock : null;
+    openPopAt(fmtBtn,
+      '<div class="fmt-row"><button type="button" data-f="bold"><b>B</b></button><button type="button" data-f="italic"><i>I</i></button><button type="button" data-f="underline"><u>U</u></button><button type="button" data-f="strikeThrough"><s>S</s></button></div><div class="pop-sep"></div>'
+      + BLOCK_ITEMS.map(([k, ic, name]) => `<button type="button" data-k="${k}"${blk0 && blk0.dataset.b === k ? ' class="cur"' : ''}><b class="fi">${esc(ic)}</b><span>${name}</span></button>`).join(''),
+      e => {
+        const b = e.target.closest('button');
+        if (!b) return;
+        if (b.dataset.f) {
+          if (rng) { const s = getSelection(); s.removeAllRanges(); s.addRange(rng); }
+          document.execCommand(b.dataset.f);
+          afterEdit();
+          return;
+        }
+        closePop();
+        const blk = blk0 || ed.lastElementChild;
+        if (!blk || blk.dataset.b === 'att') return;
+        if (blk.dataset.b === 'hr') blk.innerHTML = '<br>';
+        blk.removeAttribute('contenteditable');
+        blk.dataset.b = b.dataset.k;
+        blk.removeAttribute('data-done');
+        placeCaret(blk, true);
+        afterEdit();
+      });
+  });
+
+  // ---------- 받아쓰기 ----------
+  let dict = null;
+  function startDictation() {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { toast('이 브라우저는 받아쓰기를 지원하지 않아요. 키보드의 마이크 버튼을 써 보세요'); return; }
+    if (dict) { dict.stop(); return; }
+    let range = currentRange();
+    if (!range) {
+      let blk = lastBlock && ed.contains(lastBlock) && !['att', 'hr'].includes(lastBlock.dataset.b) ? lastBlock : null;
+      if (!blk) { blk = makeBlock('p'); ed.appendChild(blk); }
+      range = document.createRange();
+      range.selectNodeContents(blk);
+      range.collapse(false);
+    }
+    const r = new SR();
+    r.lang = 'ko-KR'; r.continuous = true; r.interimResults = false;
+    const pill = document.createElement('button');
+    pill.type = 'button'; pill.className = 'dict-pill';
+    pill.innerHTML = '<i></i>받아쓰는 중 · 눌러서 끝내기';
+    pill.addEventListener('click', () => r.stop());
+    document.body.appendChild(pill);
+    r.onresult = e => {
+      let text = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) if (e.results[i].isFinal) text += e.results[i][0].transcript;
+      text = text.trim();
+      if (!text) return;
+      ed.focus({ preventScroll: true });
+      const s = getSelection();
+      s.removeAllRanges(); s.addRange(range);
+      document.execCommand('insertText', false, text + ' ');
+      if (s.rangeCount) range = s.getRangeAt(0).cloneRange();
+      afterEdit();
+    };
+    r.onerror = e => { if (e.error === 'not-allowed' || e.error === 'service-not-allowed') toast('마이크 사용 권한이 필요합니다'); };
+    r.onend = () => { pill.remove(); dict = null; };
+    try { r.start(); dict = r; } catch (e) { pill.remove(); toast('받아쓰기를 시작할 수 없습니다'); }
+  }
+
+  // ---------- 인쇄 / PDF ----------
+  function printNote() {
+    closeFind();
+    setTimeout(() => window.print(), 60);
+  }
+
+  // ---------- 잠금 (AES-GCM 암호화, 암호에서 키를 만든다) ----------
+  const te = new TextEncoder(), td = new TextDecoder();
+  const b64 = buf => { const a = new Uint8Array(buf); let s = ''; for (let i = 0; i < a.length; i += 0x8000) s += String.fromCharCode.apply(null, a.subarray(i, i + 0x8000)); return btoa(s); };
+  const unb64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+  const keyCache = new Map();
+  let lockPass = null;          // 이번에 연 동안만 기억 (저장하지 않음)
+
+  async function deriveKey(pass, salt) {
+    const k = pass + '\u0000' + salt;
+    if (keyCache.has(k)) return keyCache.get(k);
+    const base = await crypto.subtle.importKey('raw', te.encode(pass), 'PBKDF2', false, ['deriveKey']);
+    const key = await crypto.subtle.deriveKey({ name: 'PBKDF2', salt: unb64(salt), iterations: 150000, hash: 'SHA-256' },
+      base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+    keyCache.set(k, key);
+    return key;
+  }
+  async function encText(pass, salt, text) {
+    const key = await deriveKey(pass, salt), iv = crypto.getRandomValues(new Uint8Array(12));
+    const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, te.encode(text));
+    return { s: salt, iv: b64(iv), ct: b64(ct) };
+  }
+  async function decText(pass, enc) {
+    const key = await deriveKey(pass, enc.s);
+    return td.decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: unb64(enc.iv) }, key, unb64(enc.ct)));
+  }
+  async function verifyPass(p) {
+    try { return (await decText(p, cfg.lock.check)) === 'memo-lock'; } catch (e) { return false; }
+  }
+  async function seal(n) {
+    if (!n.locked || !n._open || !lockPass || !cfg.lock) return;
+    n.atts = attIds(n.html);
+    n.enc = await encText(lockPass, cfg.lock.s, JSON.stringify({ html: n.html, body: n.body }));
+  }
+
+  function askPassword({ title, desc, confirm, ok }) {
+    return new Promise(resolve => {
+      if (closeSheet) closeSheet();
+      const bg = document.createElement('div');
+      bg.className = 'sheet-bg top';
+      bg.innerHTML = `<form class="dialog" role="dialog" novalidate><div class="dlg-title">${esc(title)}</div>${desc ? `<p class="dlg-desc">${esc(desc)}</p>` : ''}
+        <label>암호<input name="p1" type="password" autocomplete="off"></label>
+        ${confirm ? '<label>암호 확인<input name="p2" type="password" autocomplete="off"></label>' : ''}
+        <div class="dlg-err" hidden></div>
+        <div class="dlg-btns"><span class="spacer"></span><button type="button" data-c="1">취소</button><button type="submit" class="primary">${esc(ok || '확인')}</button></div></form>`;
+      const f = bg.firstElementChild, err = f.querySelector('.dlg-err');
+      let done = false;
+      const close = v => { if (done) return; done = true; bg.remove(); document.removeEventListener('keydown', onKey); closeSheet = null; resolve(v); };
+      const onKey = e => { if (e.key === 'Escape') close(null); };
+      f.addEventListener('click', e => { if (e.target.closest('[data-c]')) close(null); });
+      bg.addEventListener('mousedown', e => { if (e.target === bg) close(null); });
+      f.addEventListener('submit', e => {
+        e.preventDefault();
+        const p1 = f.elements.p1.value;
+        if (p1.length < 4) { err.textContent = '4자 이상 입력하세요'; err.hidden = false; return; }
+        if (confirm && p1 !== f.elements.p2.value) { err.textContent = '두 암호가 다릅니다'; err.hidden = false; return; }
+        close(p1);
+      });
+      document.addEventListener('keydown', onKey);
+      document.body.appendChild(bg);
+      closeSheet = () => close(null);
+      f.elements.p1.focus();
+    });
+  }
+
+  async function ensurePass() {
+    if (lockPass) return true;
+    const p = await askPassword({ title: '잠긴 메모', desc: '잠금 암호를 입력하세요.', ok: '열기' });
+    if (p == null) return false;
+    if (!(await verifyPass(p))) { toast('암호가 맞지 않습니다'); return false; }
+    lockPass = p;
+    return true;
+  }
+
+  async function unlockNote(n, then) {
+    if (!cfg.lock || !n.enc) { toast('이 메모를 열 수 없습니다'); return; }
+    if (!(await ensurePass())) return;
+    try {
+      const d = JSON.parse(await decText(lockPass, n.enc));
+      n.html = d.html; n.body = d.body; n._open = true;
+    } catch (e) { toast('이 메모는 다른 암호로 잠겨 있습니다'); return; }
+    if (then) then();
+  }
+
+  async function lockToggle(n) {
+    if (n.locked) {
+      n.locked = false; delete n.enc; delete n.atts; delete n._open;
+      persist(); renderAll();
+      toast('잠금을 해제했습니다');
+      return;
+    }
+    if (!cfg.lock) {
+      const p = await askPassword({ title: '잠금 암호 만들기', desc: '잠긴 메모를 열 때 쓰는 암호입니다. 암호를 잊으면 잠긴 메모를 열 수 없으니 꼭 기억해 두세요.', confirm: true, ok: '만들기' });
+      if (p == null) return;
+      const s = b64(crypto.getRandomValues(new Uint8Array(16)));
+      cfg.lock = { s, check: await encText(p, s, 'memo-lock') };
+      saveCfg();
+      lockPass = p;
+    } else if (!(await ensurePass())) return;
+    n.locked = true; n._open = true;
+    try { await seal(n); } catch (e) { n.locked = false; delete n._open; toast('잠그지 못했습니다'); return; }
+    persist(); renderAll();
+    toast('메모를 잠갔습니다. 앱을 1분 넘게 떠나면 다시 잠깁니다');
+  }
+
+  async function lockAll() {
+    const open = notes.filter(n => n.locked && n._open);
+    for (const n of open) { try { await seal(n); } catch (e) {} }
+    if (open.length) persist();
+    open.forEach(n => { n.html = ''; n.body = ''; n._open = false; });
+    lockPass = null; keyCache.clear();
+    const c = current();
+    if (c && c.locked) { currentId = null; loadedId = null; el.app.classList.remove('editing'); }
+    if (open.length) renderAll();
+  }
+
+  // ---------- 알림 ----------
+  function remindDialog(n) {
+    if (closeSheet) closeSheet();
+    const p2 = x => String(x).padStart(2, '0');
+    const toLocal = ts => { const d = new Date(ts); return `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}T${p2(d.getHours())}:${p2(d.getMinutes())}`; };
+    const has = n.remind && !n.reminded;
+    const def = has ? n.remind : (() => { const d = new Date(Date.now() + 3600e3); d.setMinutes(0, 0, 0); return d.getTime(); })();
+    const bg = document.createElement('div');
+    bg.className = 'sheet-bg top';
+    bg.innerHTML = `<form class="dialog" role="dialog" novalidate><div class="dlg-title">알림</div>
+      <label>날짜와 시간<input name="t" type="datetime-local" value="${toLocal(def)}"></label>
+      <p class="dlg-desc">앱이 열려 있거나 백그라운드에 있을 때 알려 드려요. 아이폰은 홈 화면에 추가한 앱에서만 알림이 옵니다.</p>
+      <div class="dlg-err" hidden></div>
+      <div class="dlg-btns">${has ? '<button type="button" class="danger" data-rm="1">알림 끄기</button>' : ''}<span class="spacer"></span><button type="button" data-c="1">취소</button><button type="submit" class="primary">저장</button></div></form>`;
+    const f = bg.firstElementChild, err = f.querySelector('.dlg-err');
+    const close = () => { bg.remove(); document.removeEventListener('keydown', onKey); closeSheet = null; };
+    const onKey = e => { if (e.key === 'Escape') close(); };
+    bg.addEventListener('mousedown', e => { if (e.target === bg) close(); });
+    f.addEventListener('click', e => {
+      if (e.target.closest('[data-c]')) close();
+      else if (e.target.closest('[data-rm]')) { close(); n.remind = null; n.reminded = false; persist(); renderList(); toast('알림을 껐습니다'); }
+    });
+    f.addEventListener('submit', e => {
+      e.preventDefault();
+      const ts = new Date(f.elements.t.value).getTime();
+      if (!ts || ts <= Date.now()) { err.textContent = '지금 이후의 시간을 고르세요'; err.hidden = false; return; }
+      close();
+      n.remind = ts; n.reminded = false;
+      persist(); renderList();
+      if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission().catch(() => {});
+      toast(`${fmtRemind(ts)}에 알려 드릴게요`);
+    });
+    document.addEventListener('keydown', onKey);
+    document.body.appendChild(bg);
+    closeSheet = close;
+  }
+
+  async function notify(n) {
+    const title = listTitle(n) || '메모';
+    if ('Notification' in window && Notification.permission === 'granted') {
+      try {
+        const reg = navigator.serviceWorker && await navigator.serviceWorker.getRegistration();
+        if (reg) await reg.showNotification('🔔 메모 알림', { body: title, tag: 'memo-' + n.id, icon: 'icons/icon-192.png' });
+        else new Notification('🔔 메모 알림', { body: title });
+      } catch (e) {}
+    }
+    if (!document.hidden) sheet(`🔔 ${title}`, [{ label: '메모 열기', run: () => select(n.id) }]);
+  }
+
+  function checkReminders() {
+    const now = Date.now();
+    let fired = false;
+    for (const n of notes) {
+      if (n.remind && !n.reminded && !n.deletedAt && n.remind <= now) { n.reminded = true; fired = true; notify(n); }
+    }
+    if (fired) { persist(); renderList(); }
+  }
+  setInterval(checkReminders, 20000);
+
+  let hiddenAt = 0;
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      hiddenAt = Date.now();
+      const c = current();
+      if (c && c.locked && c._open) seal(c).then(persist).catch(() => {});
+    } else {
+      if (hiddenAt && Date.now() - hiddenAt > 60000) lockAll();
+      checkReminders();
+    }
+  });
 
   // ---------- 공유 ----------
   let toastTimer = null;
@@ -1927,6 +2663,7 @@
   }
 
   function manageFolder() {
+    if (view === 'trash') { trashAllSheet(); return; }
     const f = folders.find(x => x.id === view);
     if (!f) return;
     sheet(f.name, [
@@ -1981,7 +2718,7 @@
 
   el.list.addEventListener('pointerdown', e => {
     const row = e.target.closest('.row');
-    if (!row || e.target.closest('.act')) return;
+    if (!row || selecting || e.target.closest('.act')) return;
     if (openRow && openRow !== row) setRow(openRow, null);
     const base = row.classList.contains('open-l') ? SWIPE : row.classList.contains('open-r') ? -SWIPE_R : 0;
     swipe = { row, x: e.clientX, y: e.clientY, base, active: false, dx: 0 };
@@ -2019,6 +2756,7 @@
 
   el.list.addEventListener('click', e => {
     if (suppressClick) { suppressClick = false; e.stopPropagation(); return; }
+    if (selecting) { const it = e.target.closest('.item'); if (it) togglePick(it.dataset.id); return; }
     const lk = e.target.closest('.lk[data-href]');
     if (lk) {
       const row = lk.closest('.row');
@@ -2030,7 +2768,8 @@
     const act = e.target.closest('.act');
     if (act) {
       const id = act.closest('.row').dataset.id;
-      if (act.dataset.act === 'pin') togglePin(id);
+      if (act.dataset.act === 'restore') restoreNote(id);
+      else if (act.dataset.act === 'pin') togglePin(id);
       else if (act.dataset.act === 'move') moveSheet(id);
       else askDelete(id);
       return;
@@ -2046,6 +2785,8 @@
   el.chips.addEventListener('click', e => {
     const b = e.target.closest('.chip');
     if (!b) return;
+    if (b.dataset.tag != null) { tag = tag === b.dataset.tag ? '' : b.dataset.tag; renderChips(); renderList(); return; }
+    if (selecting) endSelect();
     if (b.dataset.add) {
       const f = addFolder();
       if (!f) return;
